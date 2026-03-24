@@ -13,6 +13,8 @@ customizable.
   `R CMD check` from there (no `check-dir` option needed).
 - Sets `_R_CHECK_FORCE_SUGGESTS_=false`, `_R_CHECK_CRAN_INCOMING_=false`, and
   `_R_CHECK_TESTS_NLINES_=0` (show full test output) as sensible defaults.
+- Fails the job if `R CMD check` produces any WARNINGs or NOTEs (in addition
+  to ERRORs), by inspecting the `Status:` line of the check log.
 - Uploads the `*.Rcheck` directory as a workflow artifact named
   `<OS>-r-check-results` on failure.
 
