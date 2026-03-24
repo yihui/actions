@@ -122,7 +122,7 @@ runs:
       uses: actions/cache/restore@HEAD
       with:
         path: ${{ env.R_LIBS_USER }}
-        key: ${{ runner.os }}-r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}
+        key: r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}
 
     - name: Install R dependencies
       id: install
