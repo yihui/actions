@@ -114,7 +114,7 @@ runs:
       shell: Rscript {0}
       run: |
         cat("r-version=",
-            paste0(R.Version()$major, ".", R.Version()$minor), "\n",
+            paste0(getRversion(), "-", R.version$platform), "\n",
             sep = "", file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
 
     - name: Restore R package cache
@@ -128,13 +128,12 @@ runs:
       id: install
       shell: Rscript {0}
       run: |
-        cat("::group::Install R dependencies\n")
+        # Install R dependencies
         desc_file = file.path("${{ steps.pkg-dir.outputs.pkg-dir }}", "DESCRIPTION")
         if (!file.exists(desc_file)) {
           message("No DESCRIPTION file found; skipping dependency installation.")
           cat("packages-changed=false\n",
               file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
-          cat("::endgroup::\n")
           q("no")
         }
         desc = read.dcf(desc_file)
@@ -172,7 +171,6 @@ runs:
         cat(sprintf("packages-changed=%s\n", tolower(did_change)),
             file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
         if (!did_change) message("All required packages are already up to date.")
-        cat("::endgroup::\n")
 
     - name: Session info
       shell: Rscript {0}

@@ -38,21 +38,15 @@ runs:
       id: build
       shell: bash
       run: |
-        # Ensure LOGNAME is set (some macOS and container environments omit it,
-        # which causes R to emit warnings).
-        export LOGNAME="${LOGNAME:-${GITHUB_ACTOR:-runner}}"
-
-        PKG_DIR="${{ steps.pkg-dir.outputs.pkg-dir }}"
-
-        echo "::group::R CMD build"
+        # R CMD build
         cd ".."
-        R CMD build ${{ inputs.build-args }} "${PKG_DIR}"
-        echo "::endgroup::"
+        R CMD build ${{ inputs.build-args }} "${{ steps.pkg-dir.outputs.pkg-dir }}"
 
     - name: Check R package
       id: check
       shell: bash
       run: |
+        # R CMD check
         export LOGNAME="${LOGNAME:-${GITHUB_ACTOR:-runner}}"
 
         export _R_CHECK_FORCE_SUGGESTS_="${_R_CHECK_FORCE_SUGGESTS_:-false}"
@@ -60,10 +54,8 @@ runs:
         # Show full test output instead of truncating it.
         export _R_CHECK_TESTS_NLINES_="${_R_CHECK_TESTS_NLINES_:-0}"
 
-        echo "::group::R CMD check"
         cd ".."
-        R CMD check ${{ inputs.check-args }} "*_*.tar.gz"
-        echo "::endgroup::"
+        R CMD check ${{ inputs.check-args }} *_*.tar.gz
 
     - name: Upload check results on failure
       if: failure()
