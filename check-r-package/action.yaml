@@ -39,7 +39,6 @@ runs:
       shell: bash
       run: |
         # R CMD build
-        cd ".."
         R CMD build ${{ inputs.build-args }} "${{ steps.pkg-dir.outputs.pkg-dir }}"
 
     - name: Check R package
@@ -54,7 +53,6 @@ runs:
         # Show full test output instead of truncating it.
         export _R_CHECK_TESTS_NLINES_="${_R_CHECK_TESTS_NLINES_:-0}"
 
-        cd ".."
         R CMD check ${{ inputs.check-args }} *_*.tar.gz
 
     - name: Detect WARNING in R CMD check output
@@ -77,5 +75,5 @@ runs:
       uses: actions/upload-artifact@HEAD
       with:
         name: ${{ runner.os }}-r-check-results
-        path: ../*.Rcheck
+        path: *.Rcheck
         if-no-files-found: ignore
