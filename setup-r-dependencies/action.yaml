@@ -70,6 +70,11 @@ runs:
           message("R_LIBS_USER is already set to ", lib)
         }
         dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+        if (getRversion() <= '3.2.1') for (m in c('wget', 'curl')) if (Sys.which(m) != '') {
+          options(download.file.method = m)
+          cat(sprintf('\noptions(download.file.method = "%s")\n', m), file = '~/.Rprofile', append = TRUE)
+          break
+        }
 
     - name: Find package directory
       id: pkg-dir
