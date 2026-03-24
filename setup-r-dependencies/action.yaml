@@ -3,15 +3,10 @@ description: 'Install and cache R package dependencies using base R (no pak)'
 author: 'Yihui Xie'
 
 inputs:
-  cache-version:
-    description: 'Cache version; increment this number to clear the existing cache'
-    required: true
-    default: '1'
   dependencies:
     description: >
       Comma-separated list of DESCRIPTION field names whose packages should be
       installed. Valid values: Depends, Imports, LinkingTo, Suggests.
-    required: true
     default: 'Depends, Imports, LinkingTo, Suggests'
   extra-packages:
     description: >
@@ -19,22 +14,30 @@ inputs:
       (space- or comma-separated).
     default: ''
   working-directory:
-    description: 'Working directory that contains the DESCRIPTION file.'
-    default: '.'
+    description: >
+      Directory that contains the DESCRIPTION file. If empty (default),
+      the first DESCRIPTION file found recursively from the repository root
+      is used.
+    default: ''
+  system-packages:
+    description: >
+      System packages to install on all platforms: apt-get on Linux,
+      Homebrew on macOS, and Chocolatey on Windows (space-separated).
+    default: ''
   apt-packages:
     description: >
-      System packages to install via apt-get on Linux (space-separated).
-      Use this when the package names differ from those on other platforms.
+      Additional system packages to install via apt-get on Linux only
+      (space-separated). Use when the package name differs between platforms.
     default: ''
   brew-packages:
     description: >
-      System packages to install via Homebrew on macOS (space-separated).
-      Use this when the package names differ from those on other platforms.
+      Additional system packages to install via Homebrew on macOS only
+      (space-separated). Use when the package name differs between platforms.
     default: ''
   choco-packages:
     description: >
-      System packages to install via Chocolatey on Windows (space-separated).
-      Use this when the package names differ from those on other platforms.
+      Additional system packages to install via Chocolatey on Windows only
+      (space-separated). Use when the package name differs between platforms.
     default: ''
 
 runs:
@@ -62,22 +65,41 @@ runs:
         }
         dir.create(lib, recursive = TRUE, showWarnings = FALSE)
 
+    - name: Find package directory
+      id: pkg-dir
+      shell: Rscript {0}
+      run: |
+        d <- "${{ inputs.working-directory }}"
+        if (!nzchar(d)) {
+          found <- list.files(
+            path = ".", pattern = "^DESCRIPTION$",
+            recursive = TRUE, full.names = TRUE
+          )
+          if (length(found) == 0L)
+            stop("No DESCRIPTION file found in the repository.")
+          d <- dirname(found[[1L]])
+        }
+        d <- normalizePath(d, winslash = "/")
+        message("Package directory: ", d)
+        cat(sprintf("pkg-dir=%s\n", d),
+            file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+
     - name: Install apt-get packages (Linux)
-      if: runner.os == 'Linux' && inputs.apt-packages != ''
+      if: runner.os == 'Linux' && (inputs.system-packages != '' || inputs.apt-packages != '')
       shell: bash
       run: |
         sudo apt-get update -qq
-        sudo apt-get install -y ${{ inputs.apt-packages }}
+        sudo apt-get install -y ${{ inputs.system-packages }} ${{ inputs.apt-packages }}
 
     - name: Install Homebrew packages (macOS)
-      if: runner.os == 'macOS' && inputs.brew-packages != ''
+      if: runner.os == 'macOS' && (inputs.system-packages != '' || inputs.brew-packages != '')
       shell: bash
-      run: brew install ${{ inputs.brew-packages }}
+      run: brew install ${{ inputs.system-packages }} ${{ inputs.brew-packages }}
 
     - name: Install Chocolatey packages (Windows)
-      if: runner.os == 'Windows' && inputs.choco-packages != ''
+      if: runner.os == 'Windows' && (inputs.system-packages != '' || inputs.choco-packages != '')
       shell: bash
-      run: choco install -y ${{ inputs.choco-packages }}
+      run: choco install -y ${{ inputs.system-packages }} ${{ inputs.choco-packages }}
 
     - name: Get R version for cache key
       id: r-version
@@ -92,21 +114,22 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ env.R_LIBS_USER }}
-        key: ${{ runner.os }}-r${{ steps.r-version.outputs.r-version }}-${{ inputs.cache-version }}-${{ hashFiles(format('{0}/DESCRIPTION', inputs.working-directory)) }}
-        restore-keys: |
-          ${{ runner.os }}-r${{ steps.r-version.outputs.r-version }}-${{ inputs.cache-version }}-
+        key: ${{ runner.os }}-r${{ steps.r-version.outputs.r-version }}
 
     - name: Install R dependencies
+      id: install
       shell: Rscript {0}
-      working-directory: ${{ inputs.working-directory }}
       run: |
         cat("::group::Install R dependencies\n")
-        if (!file.exists("DESCRIPTION")) {
+        desc_file <- file.path("${{ steps.pkg-dir.outputs.pkg-dir }}", "DESCRIPTION")
+        if (!file.exists(desc_file)) {
           message("No DESCRIPTION file found; skipping dependency installation.")
+          cat("packages-changed=false\n",
+              file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
           cat("::endgroup::\n")
           q("no")
         }
-        desc <- read.dcf("DESCRIPTION")
+        desc <- read.dcf(desc_file)
         dep_types <- trimws(strsplit(
           "${{ inputs.dependencies }}", "[[:space:],]+"
         )[[1L]])
@@ -130,25 +153,36 @@ runs:
         extra <- extra[nzchar(extra)]
         pkgs  <- unique(c(pkgs, extra))
 
-        installed <- rownames(installed.packages())
-        pkgs      <- pkgs[!pkgs %in% installed]
-
-        if (length(pkgs) > 0L) {
-          message("Installing: ", paste(pkgs, collapse = ", "))
-          install.packages(pkgs,
-                           repos = "https://cloud.r-project.org",
-                           lib   = Sys.getenv("R_LIBS_USER"))
-        } else {
-          message("All required packages are already installed.")
+        # Install missing packages
+        installed  <- rownames(installed.packages())
+        new_pkgs   <- pkgs[!pkgs %in% installed]
+        did_change <- FALSE
+        if (length(new_pkgs) > 0L) {
+          message("Installing: ", paste(new_pkgs, collapse = " "))
+          install.packages(new_pkgs)
+          did_change <- TRUE
         }
+
+        # Update outdated packages in R_LIBS_USER
+        lib_user <- Sys.getenv("R_LIBS_USER")
+        if (nzchar(lib_user) && dir.exists(lib_user)) {
+          old <- old.packages(lib.loc = lib_user)
+          if (!is.null(old) && nrow(old) > 0L) {
+            message("Updating: ", paste(rownames(old), collapse = " "))
+            update.packages(lib.loc = lib_user, ask = FALSE)
+            did_change <- TRUE
+          }
+        }
+
+        cat(sprintf("packages-changed=%s\n", tolower(did_change)),
+            file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+        if (!did_change)
+          message("All required packages are already up to date.")
         cat("::endgroup::\n")
 
     - name: Session info
       shell: Rscript {0}
-      run: |
-        cat("::group::Session info\n")
-        print(sessionInfo())
-        cat("::endgroup::\n")
+      run: sessionInfo()
 
     # Rtools35 ships tar 1.30 which is incompatible with the cache format used
     # by GitHub Actions. Switch to the tar that ships with Git for Windows
@@ -162,10 +196,10 @@ runs:
           echo 'C:/Program Files/Git/usr/bin' >> "${GITHUB_PATH}"
         fi
 
-    # Always save the cache so that partially-completed workflows can benefit
-    # from previously installed packages on the next run.
+    # Always save the cache when packages were installed or updated so that
+    # subsequent runs (including after failures) benefit from the work done here.
     - name: Save R package cache
-      if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+      if: always() && steps.install.outputs.packages-changed == 'true'
       uses: actions/cache/save@v4
       with:
         path: ${{ env.R_LIBS_USER }}

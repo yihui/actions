@@ -4,44 +4,57 @@ author: 'Yihui Xie'
 
 inputs:
   build-args:
-    description: 'Extra arguments passed to R CMD build (e.g. "--no-build-vignettes").'
-    default: '--no-build-vignettes'
+    description: 'Extra arguments passed to R CMD build.'
+    default: ''
   check-args:
-    description: 'Extra arguments passed to R CMD check (e.g. "--no-manual --as-cran").'
-    default: '--no-manual'
-  check-dir:
-    description: 'Directory (relative to working-directory) where check output is written.'
-    default: 'check'
+    description: 'Extra arguments passed to R CMD check.'
+    default: '--no-manual --as-cran'
   working-directory:
-    description: 'Working directory containing the R package source.'
-    default: '.'
-  upload-results:
     description: >
-      When to upload check results as a workflow artifact. Accepted values:
-      "failure" (default) — upload only when the check step fails;
-      "always" — always upload;
-      "never" — never upload.
-    default: 'failure'
-  artifact-name:
-    description: >
-      Name for the check-results artifact. Defaults to
-      "<OS>-r-check-results".
+      Directory containing the R package source. If empty (default), the first
+      DESCRIPTION file found recursively from the repository root is used.
     default: ''
 
 runs:
   using: 'composite'
   steps:
+    - name: Find package directory
+      id: pkg-dir
+      shell: Rscript {0}
+      run: |
+        d <- "${{ inputs.working-directory }}"
+        if (!nzchar(d)) {
+          found <- list.files(
+            path = ".", pattern = "^DESCRIPTION$",
+            recursive = TRUE, full.names = TRUE
+          )
+          if (length(found) == 0L)
+            stop("No DESCRIPTION file found in the repository.")
+          d <- dirname(found[[1L]])
+        }
+        d      <- normalizePath(d, winslash = "/")
+        parent <- normalizePath(dirname(d), winslash = "/")
+        message("Package directory: ", d)
+        message("Parent directory: ", parent)
+        cat(sprintf("pkg-dir=%s\n", d),
+            file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+        cat(sprintf("parent-dir=%s\n", parent),
+            file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+
     - name: Build R package
       id: build
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
       run: |
         # Ensure LOGNAME is set (some macOS and container environments omit it,
         # which causes R to emit warnings).
         export LOGNAME="${LOGNAME:-${GITHUB_ACTOR:-runner}}"
 
+        PKG_DIR="${{ steps.pkg-dir.outputs.pkg-dir }}"
+        PARENT_DIR="${{ steps.pkg-dir.outputs.parent-dir }}"
+
         echo "::group::R CMD build"
-        R CMD build ${{ inputs.build-args }} .
+        cd "${PARENT_DIR}"
+        R CMD build ${{ inputs.build-args }} "${PKG_DIR}"
         echo "::endgroup::"
 
         tarball=$(ls -t *.tar.gz 2>/dev/null | head -1)
@@ -54,40 +67,28 @@ runs:
     - name: Check R package
       id: check
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
       run: |
         export LOGNAME="${LOGNAME:-${GITHUB_ACTOR:-runner}}"
 
-        # Match the behaviour of a clean CRAN submission check environment.
+        # Sensible defaults for a clean check environment.
         export _R_CHECK_FORCE_SUGGESTS_="${_R_CHECK_FORCE_SUGGESTS_:-false}"
         export _R_CHECK_CRAN_INCOMING_="${_R_CHECK_CRAN_INCOMING_:-false}"
+        # Show full test output instead of truncating it.
+        export _R_CHECK_TESTS_NLINES_="${_R_CHECK_TESTS_NLINES_:-0}"
 
-        mkdir -p "${{ inputs.check-dir }}"
+        PARENT_DIR="${{ steps.pkg-dir.outputs.parent-dir }}"
+        TARBALL="${{ steps.build.outputs.tarball }}"
 
         echo "::group::R CMD check"
-        R CMD check ${{ inputs.check-args }} \
-          --output="${{ inputs.check-dir }}" \
-          "${{ steps.build.outputs.tarball }}"
+        cd "${PARENT_DIR}"
+        R CMD check ${{ inputs.check-args }} "${TARBALL}"
         echo "::endgroup::"
 
-    - name: Show testthat output
-      if: always()
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: |
-        echo "::group::testthat output"
-        find "${{ inputs.check-dir }}" -name 'testthat.Rout*' \
-          -exec echo "==> {}" \; -exec cat '{}' \; 2>/dev/null || true
-        echo "::endgroup::"
-
-    - name: Upload check results
-      if: >-
-        always() && (
-          (failure() && inputs.upload-results != 'never') ||
-          inputs.upload-results == 'always'
-        )
+    - name: Upload check results on failure
+      if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.artifact-name || format('{0}-r-check-results', runner.os) }}
-        path: ${{ inputs.working-directory }}/${{ inputs.check-dir }}
+        name: ${{ runner.os }}-r-check-results
+        path: ${{ steps.pkg-dir.outputs.parent-dir }}/*.Rcheck
         if-no-files-found: ignore
+
