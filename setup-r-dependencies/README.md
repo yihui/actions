@@ -30,6 +30,7 @@ Actions cache so that subsequent runs are faster.
 | `apt-packages` | | Additional system packages for Linux only (apt-get). |
 | `brew-packages` | | Additional system packages for macOS only (Homebrew). |
 | `choco-packages` | | Additional system packages for Windows only (Chocolatey). |
+| `cache-key-suffix` | | Optional suffix appended to the cache key (with a `-` separator) to allow separate caches for the same OS and R version (e.g., container image, CPU architecture). |
 
 ## Example usage
 

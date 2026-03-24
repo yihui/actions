@@ -39,6 +39,12 @@ inputs:
       Additional system packages to install via Chocolatey on Windows only
       (space-separated). Use when the package name differs between platforms.
     default: ""
+  cache-key-suffix:
+    description: >
+      Optional suffix appended to the cache key (with a '-' separator) to
+      allow separate caches for different environments sharing the same OS and
+      R version (e.g. container image, CPU architecture).
+    default: ""
 
 runs:
   using: "composite"
@@ -111,7 +117,7 @@ runs:
       uses: actions/cache/restore@HEAD
       with:
         path: ${{ env.R_LIBS_USER }}
-        key: ${{ runner.os }}-r${{ steps.r-version.outputs.r-version }}
+        key: ${{ runner.os }}-r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}
 
     - name: Install R dependencies
       id: install
