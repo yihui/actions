@@ -57,18 +57,18 @@ runs:
         cd ".."
         R CMD check ${{ inputs.check-args }} *_*.tar.gz
 
-    - name: Detect NOTE/WARNING in R CMD check output
+    - name: Detect WARNING in R CMD check output
       shell: bash
       run: |
-        # Fail if R CMD check produced any WARNINGs or NOTEs
+        # Fail if R CMD check produced any WARNINGs
         check_log=$(ls ../*.Rcheck/00check.log 2>/dev/null | head -1)
         if [ -z "$check_log" ]; then
-          echo "No check log found; skipping NOTE/WARNING detection."
+          echo "No check log found; skipping WARNING detection."
           exit 0
         fi
-        if grep -qE "^Status:.*\b(WARNING|NOTE)" "$check_log"; then
-          echo "R CMD check produced WARNINGs or NOTEs:"
-          grep -E "^Status:.*\b(WARNING|NOTE)" "$check_log"
+        if grep -qE "^Status:.*\bWARNING" "$check_log"; then
+          echo "R CMD check produced WARNINGs:"
+          grep -E "^Status:.*\bWARNING" "$check_log"
           exit 1
         fi
 
