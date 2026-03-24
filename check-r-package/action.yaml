@@ -1,0 +1,74 @@
+name: "check-r-package"
+description: "Check an R package using R CMD build and R CMD check"
+author: "Yihui Xie"
+
+inputs:
+  build-args:
+    description: "Extra arguments passed to R CMD build."
+    default: ""
+  check-args:
+    description: "Extra arguments passed to R CMD check."
+    default: "--no-manual --as-cran"
+  working-directory:
+    description: >
+      Directory containing the R package source. If empty (default), the first
+      DESCRIPTION file found recursively from the repository root is used.
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Find package directory
+      id: pkg-dir
+      shell: Rscript {0}
+      run: |
+        d = "${{ inputs.working-directory }}"
+        if (d == "") {
+          found = list.files(".", "^DESCRIPTION$", recursive = TRUE, full.names = TRUE)
+          if (length(found) == 0L)
+            stop("No DESCRIPTION file found in the repository.")
+          d = dirname(found[[1L]])
+        }
+        d = normalizePath(d, winslash = "/")
+        message("Package directory: ", d)
+        cat(sprintf("pkg-dir=%s\n", d),
+            file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+
+    - name: Build R package
+      id: build
+      shell: bash
+      run: |
+        # Ensure LOGNAME is set (some macOS and container environments omit it,
+        # which causes R to emit warnings).
+        export LOGNAME="${LOGNAME:-${GITHUB_ACTOR:-runner}}"
+
+        PKG_DIR="${{ steps.pkg-dir.outputs.pkg-dir }}"
+
+        echo "::group::R CMD build"
+        cd ".."
+        R CMD build ${{ inputs.build-args }} "${PKG_DIR}"
+        echo "::endgroup::"
+
+    - name: Check R package
+      id: check
+      shell: bash
+      run: |
+        export LOGNAME="${LOGNAME:-${GITHUB_ACTOR:-runner}}"
+
+        export _R_CHECK_FORCE_SUGGESTS_="${_R_CHECK_FORCE_SUGGESTS_:-false}"
+        export _R_CHECK_CRAN_INCOMING_="${_R_CHECK_CRAN_INCOMING_:-false}"
+        # Show full test output instead of truncating it.
+        export _R_CHECK_TESTS_NLINES_="${_R_CHECK_TESTS_NLINES_:-0}"
+
+        echo "::group::R CMD check"
+        cd ".."
+        R CMD check ${{ inputs.check-args }} "*_*.tar.gz"
+        echo "::endgroup::"
+
+    - name: Upload check results on failure
+      if: failure()
+      uses: actions/upload-artifact@HEAD
+      with:
+        name: ${{ runner.os }}-r-check-results
+        path: ../*.Rcheck
+        if-no-files-found: ignore

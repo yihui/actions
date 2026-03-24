@@ -1,0 +1,195 @@
+name: "setup-r-dependencies"
+description: "Install and cache R package dependencies using base R (no pak)"
+author: "Yihui Xie"
+
+inputs:
+  dependencies:
+    description: >
+      Comma-separated list of DESCRIPTION field names whose packages should be
+      installed. Valid values: Depends, Imports, LinkingTo, Suggests.
+    default: "Depends, Imports, LinkingTo, Suggests"
+  extra-packages:
+    description: >
+      Extra R packages to install beyond those found in DESCRIPTION
+      (space- or comma-separated).
+    default: ""
+  working-directory:
+    description: >
+      Directory that contains the DESCRIPTION file. If empty (default),
+      the first DESCRIPTION file found recursively from the repository root
+      is used.
+    default: ""
+  system-packages:
+    description: >
+      System packages to install on all platforms: apt-get on Linux,
+      Homebrew on macOS, and Chocolatey on Windows (space-separated).
+    default: ""
+  apt-packages:
+    description: >
+      Additional system packages to install via apt-get on Linux only
+      (space-separated). Use when the package name differs between platforms.
+    default: ""
+  brew-packages:
+    description: >
+      Additional system packages to install via Homebrew on macOS only
+      (space-separated). Use when the package name differs between platforms.
+    default: ""
+  choco-packages:
+    description: >
+      Additional system packages to install via Chocolatey on Windows only
+      (space-separated). Use when the package name differs between platforms.
+    default: ""
+  cache-key-suffix:
+    description: >
+      Optional suffix appended to the cache key (with a '-' separator) to
+      allow separate caches for different environments sharing the same OS and
+      R version (e.g. container image, CPU architecture).
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    # On Windows, Rtools ships its own zstd that is incompatible with the
+    # zstd used by the GitHub Actions cache. Put the standalone zstd first
+    # so both cache restore and cache save use the correct binary.
+    - name: Adjust PATH to use the correct zstd on Windows
+      if: runner.os == 'Windows'
+      shell: bash
+      run: echo 'C:/tools/zstd' >> "${GITHUB_PATH}"
+
+    - name: Set up R library path
+      shell: Rscript {0}
+      run: |
+        lib = Sys.getenv("R_LIBS_USER")
+        if (lib == "") {
+          lib = file.path(normalizePath("~"), "R-library")
+          cat(sprintf("R_LIBS_USER=%s\n", lib),
+              file = Sys.getenv("GITHUB_ENV"), append = TRUE)
+          message("Setting R_LIBS_USER to ", lib)
+        } else {
+          message("R_LIBS_USER is already set to ", lib)
+        }
+        dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+
+    - name: Find package directory
+      id: pkg-dir
+      shell: Rscript {0}
+      run: |
+        d = "${{ inputs.working-directory }}"
+        if (d == "") {
+          found = list.files(".", "^DESCRIPTION$", recursive = TRUE, full.names = TRUE)
+          if (length(found) == 0L)
+            stop("No DESCRIPTION file found in the repository.")
+          d = dirname(found[[1L]])
+        }
+        d = normalizePath(d, winslash = "/")
+        message("Package directory: ", d)
+        cat(sprintf("pkg-dir=%s\n", d),
+            file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+
+    - name: Install apt-get packages (Linux)
+      if: runner.os == 'Linux' && (inputs.system-packages != '' || inputs.apt-packages != '')
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y ${{ inputs.system-packages }} ${{ inputs.apt-packages }}
+
+    - name: Install Homebrew packages (macOS)
+      if: runner.os == 'macOS' && (inputs.system-packages != '' || inputs.brew-packages != '')
+      shell: bash
+      run: brew install ${{ inputs.system-packages }} ${{ inputs.brew-packages }}
+
+    - name: Install Chocolatey packages (Windows)
+      if: runner.os == 'Windows' && (inputs.system-packages != '' || inputs.choco-packages != '')
+      shell: bash
+      run: choco install -y ${{ inputs.system-packages }} ${{ inputs.choco-packages }}
+
+    - name: Get R version for cache key
+      id: r-version
+      shell: Rscript {0}
+      run: |
+        cat("r-version=",
+            paste0(R.Version()$major, ".", R.Version()$minor), "\n",
+            sep = "", file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+
+    - name: Restore R package cache
+      id: cache-restore
+      uses: actions/cache/restore@HEAD
+      with:
+        path: ${{ env.R_LIBS_USER }}
+        key: ${{ runner.os }}-r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}
+
+    - name: Install R dependencies
+      id: install
+      shell: Rscript {0}
+      run: |
+        cat("::group::Install R dependencies\n")
+        desc_file = file.path("${{ steps.pkg-dir.outputs.pkg-dir }}", "DESCRIPTION")
+        if (!file.exists(desc_file)) {
+          message("No DESCRIPTION file found; skipping dependency installation.")
+          cat("packages-changed=false\n",
+              file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+          cat("::endgroup::\n")
+          q("no")
+        }
+        desc = read.dcf(desc_file)
+        dep_types = strsplit("${{ inputs.dependencies }}", "[[:space:],]+")[[1L]]
+        dep_types = intersect(trimws(dep_types), colnames(desc))
+
+        pkgs = unlist(strsplit(desc[1L, dep_types], ","))
+        # Strip version constraints, e.g. "xfun (>= 0.1)" -> "xfun"
+        pkgs = gsub("\\s+", "", gsub("\\([^)]*\\)", "", pkgs))
+
+        extra = strsplit("${{ inputs.extra-packages }}", "[[:space:],]+")[[1L]]
+        pkgs  = setdiff(c(pkgs, extra), c("", "R"))
+
+        # Install missing packages
+        installed  = rownames(installed.packages())
+        new_pkgs   = pkgs[!pkgs %in% installed]
+        did_change = FALSE
+        if (length(new_pkgs) > 0L) {
+          message("Installing: ", paste(new_pkgs, collapse = " "))
+          install.packages(new_pkgs)
+          did_change = TRUE
+        }
+
+        # Update outdated packages in R_LIBS_USER
+        lib_user = Sys.getenv("R_LIBS_USER")
+        if (nzchar(lib_user) && dir.exists(lib_user)) {
+          old = old.packages(lib.loc = lib_user, checkBuilt = TRUE)
+          if (NROW(old) > 0L) {
+            message("Updating: ", paste(rownames(old), collapse = " "))
+            update.packages(lib.loc = lib_user, ask = FALSE, checkBuilt = TRUE)
+            did_change = TRUE
+          }
+        }
+
+        cat(sprintf("packages-changed=%s\n", tolower(did_change)),
+            file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+        if (!did_change) message("All required packages are already up to date.")
+        cat("::endgroup::\n")
+
+    - name: Session info
+      shell: Rscript {0}
+      run: sessionInfo()
+
+    # Rtools35 ships tar 1.30 which is incompatible with the cache format used
+    # by GitHub Actions. Switch to the tar that ships with Git for Windows
+    # before the cache save step.
+    - name: Fix tar on Windows (Rtools35 ships incompatible tar 1.30)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        if command -v /c/Rtools/bin/tar 2>/dev/null && \
+           /c/Rtools/bin/tar --version 2>/dev/null | grep -q 'tar (GNU tar) 1.30'; then
+          echo 'C:/Program Files/Git/usr/bin' >> "${GITHUB_PATH}"
+        fi
+
+    # Always save the cache when packages were installed or updated so that
+    # subsequent runs (including after failures) benefit from the work done here.
+    - name: Save R package cache
+      if: always() && steps.install.outputs.packages-changed == 'true'
+      uses: actions/cache/save@HEAD
+      with:
+        path: ${{ env.R_LIBS_USER }}
+        key: ${{ steps.cache-restore.outputs.cache-primary-key }}
