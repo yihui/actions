@@ -1,47 +1,47 @@
-name: 'setup-r-dependencies'
-description: 'Install and cache R package dependencies using base R (no pak)'
-author: 'Yihui Xie'
+name: "setup-r-dependencies"
+description: "Install and cache R package dependencies using base R (no pak)"
+author: "Yihui Xie"
 
 inputs:
   dependencies:
     description: >
       Comma-separated list of DESCRIPTION field names whose packages should be
       installed. Valid values: Depends, Imports, LinkingTo, Suggests.
-    default: 'Depends, Imports, LinkingTo, Suggests'
+    default: "Depends, Imports, LinkingTo, Suggests"
   extra-packages:
     description: >
       Extra R packages to install beyond those found in DESCRIPTION
       (space- or comma-separated).
-    default: ''
+    default: ""
   working-directory:
     description: >
       Directory that contains the DESCRIPTION file. If empty (default),
       the first DESCRIPTION file found recursively from the repository root
       is used.
-    default: ''
+    default: ""
   system-packages:
     description: >
       System packages to install on all platforms: apt-get on Linux,
       Homebrew on macOS, and Chocolatey on Windows (space-separated).
-    default: ''
+    default: ""
   apt-packages:
     description: >
       Additional system packages to install via apt-get on Linux only
       (space-separated). Use when the package name differs between platforms.
-    default: ''
+    default: ""
   brew-packages:
     description: >
       Additional system packages to install via Homebrew on macOS only
       (space-separated). Use when the package name differs between platforms.
-    default: ''
+    default: ""
   choco-packages:
     description: >
       Additional system packages to install via Chocolatey on Windows only
       (space-separated). Use when the package name differs between platforms.
-    default: ''
+    default: ""
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     # On Windows, Rtools ships its own zstd that is incompatible with the
     # zstd used by the GitHub Actions cache. Put the standalone zstd first
@@ -54,9 +54,9 @@ runs:
     - name: Set up R library path
       shell: Rscript {0}
       run: |
-        lib <- Sys.getenv("R_LIBS_USER")
-        if (!nzchar(lib)) {
-          lib <- file.path(normalizePath("~"), "R-library")
+        lib = Sys.getenv("R_LIBS_USER")
+        if (lib == "") {
+          lib = file.path(normalizePath("~"), "R-library")
           cat(sprintf("R_LIBS_USER=%s\n", lib),
               file = Sys.getenv("GITHUB_ENV"), append = TRUE)
           message("Setting R_LIBS_USER to ", lib)
@@ -69,17 +69,14 @@ runs:
       id: pkg-dir
       shell: Rscript {0}
       run: |
-        d <- "${{ inputs.working-directory }}"
-        if (!nzchar(d)) {
-          found <- list.files(
-            path = ".", pattern = "^DESCRIPTION$",
-            recursive = TRUE, full.names = TRUE
-          )
+        d = "${{ inputs.working-directory }}"
+        if (d == "") {
+          found = list.files(".", "^DESCRIPTION$", recursive = TRUE, full.names = TRUE)
           if (length(found) == 0L)
             stop("No DESCRIPTION file found in the repository.")
-          d <- dirname(found[[1L]])
+          d = dirname(found[[1L]])
         }
-        d <- normalizePath(d, winslash = "/")
+        d = normalizePath(d, winslash = "/")
         message("Package directory: ", d)
         cat(sprintf("pkg-dir=%s\n", d),
             file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
@@ -111,7 +108,7 @@ runs:
 
     - name: Restore R package cache
       id: cache-restore
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@HEAD
       with:
         path: ${{ env.R_LIBS_USER }}
         key: ${{ runner.os }}-r${{ steps.r-version.outputs.r-version }}
@@ -121,7 +118,7 @@ runs:
       shell: Rscript {0}
       run: |
         cat("::group::Install R dependencies\n")
-        desc_file <- file.path("${{ steps.pkg-dir.outputs.pkg-dir }}", "DESCRIPTION")
+        desc_file = file.path("${{ steps.pkg-dir.outputs.pkg-dir }}", "DESCRIPTION")
         if (!file.exists(desc_file)) {
           message("No DESCRIPTION file found; skipping dependency installation.")
           cat("packages-changed=false\n",
@@ -129,55 +126,41 @@ runs:
           cat("::endgroup::\n")
           q("no")
         }
-        desc <- read.dcf(desc_file)
-        dep_types <- trimws(strsplit(
-          "${{ inputs.dependencies }}", "[[:space:],]+"
-        )[[1L]])
-        dep_types <- dep_types[nzchar(dep_types)]
+        desc = read.dcf(desc_file)
+        dep_types = strsplit("${{ inputs.dependencies }}", "[[:space:],]+")[[1L]]
+        dep_types = intersect(trimws(dep_types), colnames(desc))
 
-        pkgs <- character()
-        for (field in dep_types) {
-          if (field %in% colnames(desc)) {
-            raw     <- desc[1L, field]
-            entries <- strsplit(raw, ",")[[1L]]
-            # Strip version constraints, e.g. "dplyr (>= 1.0.0)" -> "dplyr"
-            entries <- trimws(gsub("\\s*\\([^)]*\\)", "", entries))
-            entries <- entries[nzchar(entries) & entries != "R"]
-            pkgs    <- c(pkgs, entries)
-          }
-        }
+        pkgs = unlist(strsplit(desc[1L, dep_types], ","))
+        # Strip version constraints, e.g. "xfun (>= 0.1)" -> "xfun"
+        pkgs = gsub("\\s+", "", gsub("\\([^)]*\\)", "", pkgs))
 
-        extra <- trimws(strsplit(
-          "${{ inputs.extra-packages }}", "[[:space:],]+"
-        )[[1L]])
-        extra <- extra[nzchar(extra)]
-        pkgs  <- unique(c(pkgs, extra))
+        extra = strsplit("${{ inputs.extra-packages }}", "[[:space:],]+")[[1L]]
+        pkgs  = setdiff(c(pkgs, extra), c("", "R"))
 
         # Install missing packages
-        installed  <- rownames(installed.packages())
-        new_pkgs   <- pkgs[!pkgs %in% installed]
-        did_change <- FALSE
+        installed  = rownames(installed.packages())
+        new_pkgs   = pkgs[!pkgs %in% installed]
+        did_change = FALSE
         if (length(new_pkgs) > 0L) {
           message("Installing: ", paste(new_pkgs, collapse = " "))
           install.packages(new_pkgs)
-          did_change <- TRUE
+          did_change = TRUE
         }
 
         # Update outdated packages in R_LIBS_USER
-        lib_user <- Sys.getenv("R_LIBS_USER")
+        lib_user = Sys.getenv("R_LIBS_USER")
         if (nzchar(lib_user) && dir.exists(lib_user)) {
-          old <- old.packages(lib.loc = lib_user)
-          if (!is.null(old) && nrow(old) > 0L) {
+          old = old.packages(lib.loc = lib_user, checkBuilt = TRUE)
+          if (NROW(old) > 0L) {
             message("Updating: ", paste(rownames(old), collapse = " "))
-            update.packages(lib.loc = lib_user, ask = FALSE)
-            did_change <- TRUE
+            update.packages(lib.loc = lib_user, ask = FALSE, checkBuilt = TRUE)
+            did_change = TRUE
           }
         }
 
         cat(sprintf("packages-changed=%s\n", tolower(did_change)),
             file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
-        if (!did_change)
-          message("All required packages are already up to date.")
+        if (!did_change) message("All required packages are already up to date.")
         cat("::endgroup::\n")
 
     - name: Session info
@@ -200,7 +183,7 @@ runs:
     # subsequent runs (including after failures) benefit from the work done here.
     - name: Save R package cache
       if: always() && steps.install.outputs.packages-changed == 'true'
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@HEAD
       with:
         path: ${{ env.R_LIBS_USER }}
         key: ${{ steps.cache-restore.outputs.cache-primary-key }}
