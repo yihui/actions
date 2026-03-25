@@ -75,6 +75,10 @@ runs:
           cat(sprintf('\noptions(download.file.method = "%s")\n', m), file = '~/.Rprofile', append = TRUE)
           break
         }
+        # Set default repos if not already set
+        if (length(repos <- getOption("repos")) == 0 || identical(repos, "@CRAN@")) {
+          cat("options(repos = 'https://cloud.r-project.org')\n", file = '~/.Rprofile', append = TRUE)
+        }
 
     - name: Find package directory
       id: pkg-dir
