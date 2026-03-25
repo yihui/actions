@@ -128,7 +128,8 @@ runs:
       uses: actions/cache/restore@HEAD
       with:
         path: ${{ steps.setup-r-libs.outputs.r-libs-user }}
-        key: r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}
+        key: r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}-${{ github.run_id }}
+        restore-keys: r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}
 
     - name: Install R dependencies
       id: install
