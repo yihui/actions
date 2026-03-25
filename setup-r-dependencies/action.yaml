@@ -150,28 +150,28 @@ runs:
 
         extra = strsplit("${{ inputs.extra-packages }}", "[[:space:],]+")[[1L]]
         pkgs  = setdiff(c(pkgs, extra), c("", "R"))
-        install_self = "." %in% pkgs
-        if (install_self) pkgs = setdiff(pkgs, ".")
+        if (install_self <- ("." %in% pkgs)) pkgs = setdiff(pkgs, ".")
 
+        # Skip help pages for R < 4.0
+        install = if (getRversion() >= '4.0) install.packages else {
+          function(...) install.packages(..., INSTALL_opts = "--no-help")
+        }
         # Install missing packages
         installed  = rownames(installed.packages())
         new_pkgs   = pkgs[!pkgs %in% installed]
         did_change = FALSE
-        if (length(new_pkgs) > 0L) {
+        if (length(new_pkgs)) {
           message("Installing: ", paste(new_pkgs, collapse = " "))
-          install.packages(new_pkgs)
+          install(new_pkgs)
           did_change = TRUE
         }
 
-        # Update outdated packages in R_LIBS_USER
-        lib_user = Sys.getenv("R_LIBS_USER")
-        if (nzchar(lib_user) && dir.exists(lib_user)) {
-          old = old.packages(lib.loc = lib_user, checkBuilt = TRUE)
-          if (NROW(old) > 0L) {
-            message("Updating: ", paste(rownames(old), collapse = " "))
-            update.packages(lib.loc = lib_user, ask = FALSE, checkBuilt = TRUE)
-            did_change = TRUE
-          }
+        # Update outdated packages
+        old = rownames(old.packages(lib.loc = .libPaths()[1], checkBuilt = TRUE))
+        if (length(old)) {
+          message("Updating: ", paste(old, collapse = " "))
+          install(old)
+          did_change = TRUE
         }
 
         cat(sprintf("packages-changed=%s\n", tolower(did_change)),
