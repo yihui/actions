@@ -59,7 +59,7 @@ runs:
       shell: bash
       run: |
         # Fail if R CMD check produced any WARNINGs
-        check_log=$(ls ../*.Rcheck/00check.log 2>/dev/null | head -1)
+        check_log=$(ls *.Rcheck/00check.log 2>/dev/null | head -1)
         if [ -z "$check_log" ]; then
           echo "No check log found; skipping WARNING detection."
           exit 0
@@ -74,6 +74,6 @@ runs:
       if: failure()
       uses: actions/upload-artifact@HEAD
       with:
-        name: ${{ runner.os }}-r-check-results
+        name: r-check-${{ github.run_id }}-${{ strategy.job-index }}-${{ github.run_attempt }}
         path: "*.Rcheck"
         if-no-files-found: ignore
