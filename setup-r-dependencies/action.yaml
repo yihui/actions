@@ -153,7 +153,7 @@ runs:
         if (install_self <- ("." %in% pkgs)) pkgs = setdiff(pkgs, ".")
 
         # Skip help pages for R < 4.0
-        install = if (getRversion() >= '4.0) install.packages else {
+        install = if (getRversion() >= "4.0") install.packages else {
           function(...) install.packages(..., INSTALL_opts = "--no-help")
         }
         # Install missing packages
@@ -179,7 +179,7 @@ runs:
         if (!did_change) message("All required packages are already up to date.")
 
         if (install_self) {
-          install.packages(dirname(desc_file), lib.loc = lib_user, repos = NULL, type = "source")
+          install.packages(dirname(desc_file), repos = NULL, type = "source")
         }
 
     - name: Session info
