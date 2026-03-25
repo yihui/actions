@@ -78,7 +78,7 @@ runs:
           break
         }
         # Set default repos if not already set
-        if (length(repos <- getOption("repos")) == 0 || identical(repos, "@CRAN@")) {
+        if (length(setdiff(getOption("repos"), "@CRAN@")) == 0) {
           cat("options(repos = 'https://cloud.r-project.org')\n", file = '~/.Rprofile', append = TRUE)
         }
 
@@ -135,7 +135,6 @@ runs:
       shell: Rscript {0}
       run: |
         # Install R dependencies
-        print(getOption("repos"))
         desc_file = file.path("${{ steps.pkg-dir.outputs.pkg-dir }}", "DESCRIPTION")
         if (!file.exists(desc_file)) {
           message("No DESCRIPTION file found; skipping dependency installation.")
