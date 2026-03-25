@@ -24,7 +24,7 @@ Actions cache so that subsequent runs are faster.
 | Input | Default | Description |
 |---|---|---|
 | `dependencies` | `Depends, Imports, LinkingTo, Suggests` | DESCRIPTION field names to install (comma-separated). |
-| `extra-packages` | | Additional R packages to install beyond DESCRIPTION (space- or comma-separated). |
+| `extra-packages` | | Additional R packages to install beyond DESCRIPTION (space- or comma-separated). The special value `.` means to install the package in this repository. |
 | `working-directory` | | Directory containing the `DESCRIPTION` file. If empty, the first `DESCRIPTION` found recursively is used. |
 | `system-packages` | | System packages to install on **all** platforms via apt-get / Homebrew / Chocolatey (space-separated). |
 | `apt-packages` | | Additional system packages for Linux only (apt-get). |

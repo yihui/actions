@@ -150,6 +150,8 @@ runs:
 
         extra = strsplit("${{ inputs.extra-packages }}", "[[:space:],]+")[[1L]]
         pkgs  = setdiff(c(pkgs, extra), c("", "R"))
+        install_self = "." %in% pkgs
+        if (install_self) pkgs = setdiff(pkgs, ".")
 
         # Install missing packages
         installed  = rownames(installed.packages())
@@ -175,6 +177,10 @@ runs:
         cat(sprintf("packages-changed=%s\n", tolower(did_change)),
             file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
         if (!did_change) message("All required packages are already up to date.")
+
+        if (install_self) {
+          install.packages(dirname(desc_file), lib.loc = lib_user, repos = NULL, type = "source")
+        }
 
     - name: Session info
       shell: Rscript {0}
