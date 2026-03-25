@@ -74,7 +74,6 @@ runs:
         cat(sprintf("r-libs-user=%s\n", lib),
             file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
         if (getRversion() <= '3.2.1') for (m in c('wget', 'curl')) if (Sys.which(m) != '') {
-          options(download.file.method = m)
           cat(sprintf('\noptions(download.file.method = "%s")\n', m), file = '~/.Rprofile', append = TRUE)
           break
         }
@@ -136,6 +135,7 @@ runs:
       shell: Rscript {0}
       run: |
         # Install R dependencies
+        print(getOption("repos"))
         desc_file = file.path("${{ steps.pkg-dir.outputs.pkg-dir }}", "DESCRIPTION")
         if (!file.exists(desc_file)) {
           message("No DESCRIPTION file found; skipping dependency installation.")
