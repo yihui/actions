@@ -75,5 +75,5 @@ runs:
       uses: actions/upload-artifact@HEAD
       with:
         name: ${{ runner.os }}-r-check-results
-        path: *.Rcheck
+        path: "*.Rcheck"
         if-no-files-found: ignore
