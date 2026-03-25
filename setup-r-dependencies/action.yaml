@@ -58,6 +58,7 @@ runs:
       run: echo 'C:/tools/zstd' >> "${GITHUB_PATH}"
 
     - name: Set up R library path
+      id: setup-r-libs
       shell: Rscript {0}
       run: |
         lib = Sys.getenv("R_LIBS_USER")
@@ -70,6 +71,8 @@ runs:
           message("R_LIBS_USER is already set to ", lib)
         }
         dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+        cat(sprintf("r-libs-user=%s\n", lib),
+            file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
         if (getRversion() <= '3.2.1') for (m in c('wget', 'curl')) if (Sys.which(m) != '') {
           options(download.file.method = m)
           cat(sprintf('\noptions(download.file.method = "%s")\n', m), file = '~/.Rprofile', append = TRUE)
@@ -125,7 +128,7 @@ runs:
       id: cache-restore
       uses: actions/cache/restore@HEAD
       with:
-        path: ${{ env.R_LIBS_USER }}
+        path: ${{ steps.setup-r-libs.outputs.r-libs-user }}
         key: r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}
 
     - name: Install R dependencies
@@ -204,5 +207,5 @@ runs:
       if: always() && steps.install.outputs.packages-changed == 'true'
       uses: actions/cache/save@HEAD
       with:
-        path: ${{ env.R_LIBS_USER }}
+        path: ${{ steps.setup-r-libs.outputs.r-libs-user }}
         key: ${{ steps.cache-restore.outputs.cache-primary-key }}
