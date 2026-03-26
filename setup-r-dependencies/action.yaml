@@ -136,6 +136,14 @@ runs:
       shell: Rscript {0}
       run: |
         # Install R dependencies
+        lib = "${{ steps.setup-r-libs.outputs.r-libs-user }}"
+        # Record state of the R_LIBS_USER directory before installing/updating
+        lib_mtime = function() {
+          before_files = list.files(lib, all.files = TRUE, recursive = TRUE, full.names = TRUE)
+          file.info(before_files)[, 'mtime', drop = FALSE]
+        }
+        time_before = lib_mtime()
+
         desc_file = file.path("${{ steps.pkg-dir.outputs.pkg-dir }}", "DESCRIPTION")
         if (!file.exists(desc_file)) {
           message("No DESCRIPTION file found; skipping dependency installation.")
@@ -162,11 +170,9 @@ runs:
         # Install missing packages
         installed  = rownames(installed.packages())
         new_pkgs   = pkgs[!pkgs %in% installed]
-        did_change = FALSE
         if (length(new_pkgs)) {
           message("Installing: ", paste(new_pkgs, collapse = " "))
           install(new_pkgs)
-          did_change = TRUE
         }
 
         # Update outdated packages
@@ -174,12 +180,16 @@ runs:
         if (length(old)) {
           message("Updating: ", paste(old, collapse = " "))
           install(old)
-          did_change = TRUE
         }
 
-        cat(sprintf("packages-changed=%s\n", tolower(did_change)),
+        # Record state of the R_LIBS_USER directory after installing/updating
+        time_after = lib_mtime()
+
+        # Determine whether the library directory changed
+        packages_changed = !identical(time_before, time_after)
+        cat(sprintf("packages-changed=%s\n", tolower(packages_changed)),
             file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
-        if (!did_change) message("All required packages are already up to date.")
+        if (!packages_changed) message("All required packages are already up to date.")
 
         if (install_self) {
           install.packages(dirname(desc_file), repos = NULL, type = "source")
