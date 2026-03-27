@@ -136,7 +136,7 @@ runs:
       shell: Rscript {0}
       run: |
         # Install R dependencies
-        lib = "${{ steps.setup-r-libs.outputs.r-libs-user }}"
+        lib = Sys.getenv("R_LIBS_USER")
         # Record state of the R_LIBS_USER directory before installing/updating
         lib_mtime = function() {
           before_files = list.files(lib, all.files = TRUE, recursive = TRUE, full.names = TRUE)
