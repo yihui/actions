@@ -198,7 +198,7 @@ runs:
         if (!packages_changed) message("All required packages are already up to date.")
 
         if (install_self) {
-          install.packages(dirname(desc_file), repos = NULL, type = "source")
+          install(dirname(desc_file), repos = NULL, type = "source")
         }
 
     - name: Session info
