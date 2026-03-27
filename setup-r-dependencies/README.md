@@ -15,16 +15,13 @@ Actions cache so that subsequent runs are faster.
 - `system-packages` input installs the same package list on all platforms;
   OS-specific inputs are available when names differ between platforms.
 - Also updates any outdated packages already in the cache library.
-- Handles zstd and tar compatibility issues on Windows (Rtools ships an
-  incompatible `zstd`; Rtools35 ships `tar 1.30` which is incompatible with
-  the cache format).
 
 ## Inputs
 
 | Input | Default | Description |
 |---|---|---|
-| `dependencies` | `Depends, Imports, LinkingTo, Suggests` | DESCRIPTION field names to install (comma-separated). |
-| `extra-packages` | | Additional R packages to install beyond DESCRIPTION (space- or comma-separated). The special value `.` means to install the package in this repository. |
+| `dependencies` | `Depends, Imports, LinkingTo, Suggests` | DESCRIPTION field names to install (comma-separated). Dependencies specified in the `Remotes` field of the package `DESCRIPTION` will be installed via `remotes::install_github()`. |
+| `extra-packages` | | Additional R packages to install beyond DESCRIPTION (space- or comma-separated). The special value `.` means to install the package in this repository. Values containing `/` will be treated as GitHub packages and installed via `remotes::install_github()`. |
 | `working-directory` | | Directory containing the `DESCRIPTION` file. If empty, the first `DESCRIPTION` found recursively is used. |
 | `system-packages` | | System packages to install on **all** platforms via apt-get / Homebrew / Chocolatey (space-separated). |
 | `apt-packages` | | Additional system packages for Linux only (apt-get). |

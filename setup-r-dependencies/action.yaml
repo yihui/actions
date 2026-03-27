@@ -167,8 +167,21 @@ runs:
         install = function(pkgs, ...) {
           if (!length(pkgs)) return()
           message("Installing: ", paste(pkgs, collapse = " "))
-          install.packages(pkgs, lib.loc = lib, ..., INSTALL_opts = if (getRversion() < "4.0") "--no-help" else list())
+          install.packages(pkgs, lib, ..., INSTALL_opts = if (getRversion() < "4.0") "--no-help" else list())
         }
+
+        # Packages containing '/' will be installed via remotes
+        pkgs_gh = grep('/', pkgs, value = TRUE)
+        # Same for packages in the Remotes field of DESCRIPTION
+        if ('Remotes' %in% colnames(desc)) {
+          pkgs_gh = c(pkgs_gh, strsplit(desc[1L, 'Remotes'], "[[:space:],]+")[[1L]])
+        }
+        if (length(pkgs_gh <- setdiff(pkgs_gh, ''))) {
+          if (!requireNamespace("remotes", quietly = TRUE)) install("remotes")
+          remotes::install_github(pkgs_gh, lib = lib)
+          pkgs = setdiff(pkgs, pkgs_gh)
+        }
+
         # Install missing packages
         installed = rownames(installed.packages())
         install(setdiff(pkgs, installed))
