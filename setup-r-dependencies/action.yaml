@@ -164,8 +164,7 @@ runs:
         if (install_self <- ("." %in% pkgs)) pkgs = setdiff(pkgs, ".")
 
         # Skip help pages for R < 4.0
-        install = function(pkgs, ...) {
-          if (!length(pkgs)) return()
+        install = function(pkgs, ...) if (length(pkgs)) {
           message("Installing: ", paste(pkgs, collapse = " "))
           install.packages(pkgs, lib, ..., INSTALL_opts = if (getRversion() < "4.0") "--no-help" else list())
         }
