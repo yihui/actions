@@ -164,8 +164,8 @@ runs:
         if (install_self <- ("." %in% pkgs)) pkgs = setdiff(pkgs, ".")
 
         # Skip help pages for R < 4.0
-        install = function(pkgs, ...) if (length(pkgs)) {
-          message("Installing: ", paste(pkgs, collapse = " "))
+        install = function(pkgs, ..., .msg = "Installing") if (length(pkgs)) {
+          message(.msg, ": ", paste(pkgs, collapse = " "))
           install.packages(pkgs, lib, ..., INSTALL_opts = if (getRversion() < "4.0") "--no-help" else list())
         }
 
@@ -183,10 +183,11 @@ runs:
 
         # Install missing packages
         installed = rownames(installed.packages())
+        message("Installed: ", paste(sort(installed), collapse = " "))
         install(setdiff(pkgs, installed))
 
         # Update outdated packages
-        install(rownames(old.packages(lib.loc = lib, checkBuilt = TRUE)))
+        install(rownames(old.packages(lib.loc = lib, checkBuilt = TRUE)), .msg = "Updating")
 
         # Record state of the R_LIBS_USER directory after installing/updating
         time_after = lib_mtime()
