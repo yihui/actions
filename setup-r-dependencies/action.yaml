@@ -219,7 +219,6 @@ runs:
         if (install_self) {
           install(dirname(desc_file), repos = NULL, type = "source")
         }
-        message("To be cached: ", paste(list.files(lib), collapse = " "))
 
     - name: Session info
       shell: Rscript {0}
