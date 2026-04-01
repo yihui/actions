@@ -129,7 +129,7 @@ runs:
       run: |
         BASE="r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}"
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          PRIMARY="${BASE}-pr${{ github.event.pull_request.number }}"
+          PRIMARY="pr${{ github.event.pull_request.number }}-${BASE}"
           {
             echo "restore-keys<<EOF"
             echo "${PRIMARY}"
