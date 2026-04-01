@@ -218,6 +218,25 @@ runs:
           echo 'C:/Program Files/Git/usr/bin' >> "${GITHUB_PATH}"
         fi
 
+    # Delete old caches that share the same key prefix so that the next restore
+    # always picks up the freshest cache instead of an older, smaller one.
+    - name: Delete old R package caches
+      if: always() && steps.install.outputs.packages-changed == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        BASE_KEY="r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}"
+        echo "Deleting old caches with key prefix: $BASE_KEY"
+        # Use a high limit; caches also auto-expire after 7 days, so accumulation
+        # is naturally bounded. 'actions: write' permission is required to delete caches.
+        gh cache list --repo "$GITHUB_REPOSITORY" --key "$BASE_KEY" --limit 500 --json id --jq '.[].id' | \
+          while IFS= read -r id; do
+            echo "Deleting cache ID: $id"
+            gh cache delete "$id" --repo "$GITHUB_REPOSITORY" || \
+              echo "Warning: failed to delete cache ID $id (continuing)"
+          done
+
     # Always save the cache when packages were installed or updated so that
     # subsequent runs (including after failures) benefit from the work done here.
     - name: Save R package cache
