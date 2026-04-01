@@ -123,13 +123,32 @@ runs:
             paste0(getRversion(), "-", R.version$platform), "\n",
             sep = "", file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
 
+    - name: Compute cache key
+      id: cache-key
+      shell: bash
+      run: |
+        BASE="r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}"
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          PRIMARY="${BASE}-pr${{ github.event.pull_request.number }}"
+          {
+            echo "restore-keys<<EOF"
+            echo "${PRIMARY}"
+            echo "${BASE}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+        else
+          PRIMARY="${BASE}"
+          echo "restore-keys=${BASE}" >> "$GITHUB_OUTPUT"
+        fi
+        echo "primary-key=${PRIMARY}" >> "$GITHUB_OUTPUT"
+
     - name: Restore R package cache
       id: cache-restore
       uses: actions/cache/restore@HEAD
       with:
         path: ${{ steps.setup-r-libs.outputs.r-libs-user }}
-        key: r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}-${{ github.run_id }}
-        restore-keys: r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}
+        key: ${{ steps.cache-key.outputs.primary-key }}
+        restore-keys: ${{ steps.cache-key.outputs.restore-keys }}
 
     - name: Install R dependencies
       id: install
@@ -218,25 +237,6 @@ runs:
           echo 'C:/Program Files/Git/usr/bin' >> "${GITHUB_PATH}"
         fi
 
-    # Delete old caches that share the same key prefix so that the next restore
-    # always picks up the freshest cache instead of an older, smaller one.
-    - name: Delete old R package caches
-      if: always() && steps.install.outputs.packages-changed == 'true'
-      shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        BASE_KEY="r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}"
-        echo "Deleting old caches with key prefix: $BASE_KEY"
-        # Use a high limit; caches also auto-expire after 7 days, so accumulation
-        # is naturally bounded. 'actions: write' permission is required to delete caches.
-        gh cache list --repo "$GITHUB_REPOSITORY" --key "$BASE_KEY" --limit 500 --json id --jq '.[].id' | \
-          while IFS= read -r id; do
-            echo "Deleting cache ID: $id"
-            gh cache delete "$id" --repo "$GITHUB_REPOSITORY" || \
-              echo "Warning: failed to delete cache ID $id (continuing)"
-          done
-
     # Always save the cache when packages were installed or updated so that
     # subsequent runs (including after failures) benefit from the work done here.
     - name: Save R package cache
@@ -244,4 +244,4 @@ runs:
       uses: actions/cache/save@HEAD
       with:
         path: ${{ steps.setup-r-libs.outputs.r-libs-user }}
-        key: ${{ steps.cache-restore.outputs.cache-primary-key }}
+        key: ${{ steps.cache-key.outputs.primary-key }}
