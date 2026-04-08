@@ -172,7 +172,7 @@ runs:
           # Strip version constraints, e.g. "xfun (>= 0.1)" -> "xfun"
           pkgs = gsub("\\s+", "", gsub("\\([^)]*\\)", "", pkgs))
         } else {
-          pkgs = desc_file = NULL
+          pkgs = desc = desc_file = NULL
           message("No DESCRIPTION file found in the repository.")
         }
 
