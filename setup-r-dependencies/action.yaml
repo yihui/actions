@@ -89,8 +89,7 @@ runs:
         d = "${{ inputs.working-directory }}"
         if (d == "") {
           found = list.files(".", "^DESCRIPTION$", recursive = TRUE, full.names = TRUE)
-          if (length(found) == 0L)
-            stop("No DESCRIPTION file found in the repository.")
+          if (length(found) == 0L) q("no")
           d = dirname(found[[1L]])
         }
         d = normalizePath(d, winslash = "/")
@@ -163,20 +162,19 @@ runs:
         }
         time_before = lib_mtime()
 
-        desc_file = file.path("${{ steps.pkg-dir.outputs.pkg-dir }}", "DESCRIPTION")
-        if (!file.exists(desc_file)) {
-          message("No DESCRIPTION file found; skipping dependency installation.")
-          cat("packages-changed=false\n",
-              file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
-          q("no")
+        pkg_dir = "${{ steps.pkg-dir.outputs.pkg-dir }}"
+        if (nzchar(pkg_dir)) {
+          desc_file = file.path(pkg_dir, "DESCRIPTION")
+          desc = read.dcf(desc_file)
+          dep_types = strsplit("${{ inputs.dependencies }}", "[[:space:],]+")[[1L]]
+          dep_types = intersect(trimws(dep_types), colnames(desc))
+          pkgs = unlist(strsplit(desc[1L, dep_types], ","))
+          # Strip version constraints, e.g. "xfun (>= 0.1)" -> "xfun"
+          pkgs = gsub("\\s+", "", gsub("\\([^)]*\\)", "", pkgs))
+        } else {
+          pkgs = desc_file = NULL
+          message("No DESCRIPTION file found in the repository.")
         }
-        desc = read.dcf(desc_file)
-        dep_types = strsplit("${{ inputs.dependencies }}", "[[:space:],]+")[[1L]]
-        dep_types = intersect(trimws(dep_types), colnames(desc))
-
-        pkgs = unlist(strsplit(desc[1L, dep_types], ","))
-        # Strip version constraints, e.g. "xfun (>= 0.1)" -> "xfun"
-        pkgs = gsub("\\s+", "", gsub("\\([^)]*\\)", "", pkgs))
 
         extra = strsplit("${{ inputs.extra-packages }}", "[[:space:],]+")[[1L]]
         pkgs  = setdiff(c(pkgs, extra), c("", "R"))
