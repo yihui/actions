@@ -128,15 +128,16 @@ runs:
       run: |
         BASE="r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}"
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          PRIMARY="pr${{ github.event.pull_request.number }}-${BASE}"
+          PR_BASE="pr${{ github.event.pull_request.number }}-${BASE}"
+          PRIMARY="${PR_BASE}-${{ github.run_id }}"
           {
             echo "restore-keys<<EOF"
-            echo "${PRIMARY}"
+            echo "${PR_BASE}"
             echo "${BASE}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
         else
-          PRIMARY="${BASE}"
+          PRIMARY="${BASE}-${{ github.run_id }}"
           echo "restore-keys=${BASE}" >> "$GITHUB_OUTPUT"
         fi
         echo "primary-key=${PRIMARY}" >> "$GITHUB_OUTPUT"
