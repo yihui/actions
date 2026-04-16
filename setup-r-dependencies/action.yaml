@@ -159,7 +159,7 @@ runs:
         # Record state of the R_LIBS_USER directory before installing/updating
         lib_status = function() {
           desc = list.files(lib, "^DESCRIPTION$", recursive = TRUE, full.names = TRUE)
-          tools::file_md5(desc)  # any change to DESCRIPTION files will trigger new cache
+          tools::md5sum(desc)  # any change to DESCRIPTION files will trigger new cache
         }
         time_before = lib_status()
 
