@@ -157,11 +157,11 @@ runs:
         # Install R dependencies
         lib = Sys.getenv("R_LIBS_USER")
         # Record state of the R_LIBS_USER directory before installing/updating
-        lib_mtime = function() {
-          before_files = list.files(lib, all.files = TRUE, recursive = TRUE, full.names = TRUE)
-          file.info(before_files)[, 'mtime', drop = FALSE]
+        lib_status = function() {
+          desc = list.files(lib, "^DESCRIPTION$", recursive = TRUE, full.names = TRUE)
+          tools::file_md5(desc)  # any change to DESCRIPTION files will trigger new cache
         }
-        time_before = lib_mtime()
+        time_before = lib_status()
 
         pkg_dir = "${{ steps.pkg-dir.outputs.pkg-dir }}"
         if (nzchar(pkg_dir)) {
@@ -207,7 +207,7 @@ runs:
         install(rownames(old.packages(lib.loc = lib, checkBuilt = TRUE)), .msg = "Updating")
 
         # Record state of the R_LIBS_USER directory after installing/updating
-        time_after = lib_mtime()
+        time_after = lib_status()
 
         # Determine whether the library directory changed
         packages_changed = !identical(time_before, time_after)
