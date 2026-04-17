@@ -13,6 +13,11 @@ inputs:
       Extra R packages to install beyond those found in DESCRIPTION
       (space- or comma-separated).
     default: ""
+  r-universe:
+    description: >
+      Names of R universe(s) to use for package installation (space- or
+      comma-separated).
+    default: ""
   working-directory:
     description: >
       Directory that contains the DESCRIPTION file. If empty (default),
@@ -78,9 +83,14 @@ runs:
           break
         }
         # Set default repos if not already set
-        if (length(setdiff(getOption("repos"), "@CRAN@")) == 0) {
-          cat("options(repos = 'https://cloud.r-project.org')\n", file = '~/.Rprofile', append = TRUE)
-        }
+        repo = setdiff(getOption("repos"), "@CRAN@")
+        if (length(repo) == 0) repo = 'https://cloud.r-project.org'
+        # Add r-universes
+        univ = strsplit("${{ inputs.r-universe }}", "[ ,]")[[1]]
+        univ = setdiff(gsub("^\\s+|\\s+$", "", univ), "")
+        repo = c(repo, sprintf('https://%s.r-universe.dev', univ))
+        # Set repos in .Rprofile
+        cat(sprintf("options(repos = '%s')\n", paste(repo, collapse = "', '")), file = '~/.Rprofile', append = TRUE)
 
     - name: Find package directory
       id: pkg-dir
