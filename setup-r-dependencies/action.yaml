@@ -91,6 +91,7 @@ runs:
         repo = c(repo, sprintf('https://%s.r-universe.dev', univ))
         # Set repos in .Rprofile
         cat(sprintf("options(repos = c('%s'))\n", paste(repo, collapse = "', '")), file = '~/.Rprofile', append = TRUE)
+        message("Repos: ", paste(repo, collapse = ", "))
 
     - name: Find package directory
       id: pkg-dir
