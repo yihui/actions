@@ -130,16 +130,11 @@ runs:
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           PR_BASE="pr${{ github.event.pull_request.number }}-${BASE}"
           PRIMARY="${PR_BASE}-${{ github.run_id }}"
-          {
-            echo "restore-keys<<EOF"
-            echo "${PR_BASE}"
-            echo "${BASE}"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          echo "restore-key2=${PR_BASE}" >> "$GITHUB_OUTPUT"
         else
           PRIMARY="${BASE}-${{ github.run_id }}"
-          echo "restore-keys=${BASE}" >> "$GITHUB_OUTPUT"
         fi
+        echo "restore-key1=${BASE}" >> "$GITHUB_OUTPUT"
         echo "primary-key=${PRIMARY}" >> "$GITHUB_OUTPUT"
 
     - name: Restore R package cache
@@ -148,7 +143,9 @@ runs:
       with:
         path: ${{ steps.setup-r-libs.outputs.r-libs-user }}
         key: ${{ steps.cache-key.outputs.primary-key }}
-        restore-keys: ${{ steps.cache-key.outputs.restore-keys }}
+        restore-keys: |
+          ${{ steps.cache-key.outputs.restore-key2 }}
+          ${{ steps.cache-key.outputs.restore-key1 }}
 
     - name: Install R dependencies
       id: install
