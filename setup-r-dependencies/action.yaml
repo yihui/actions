@@ -129,10 +129,10 @@ runs:
         BASE="r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}"
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           PR_BASE="pr${{ github.event.pull_request.number }}-${BASE}"
-          PRIMARY="${PR_BASE}-${{ github.run_id }}-${{ github.run_attempt }}"
+          PRIMARY="${PR_BASE}-${{ github.run_id }}"
           echo "restore-key2=${PR_BASE}" >> "$GITHUB_OUTPUT"
         else
-          PRIMARY="${BASE}-${{ github.run_id }}-${{ github.run_attempt }}"
+          PRIMARY="${BASE}-${{ github.run_id }}"
         fi
         echo "restore-key1=${BASE}" >> "$GITHUB_OUTPUT"
         echo "primary-key=${PRIMARY}" >> "$GITHUB_OUTPUT"
