@@ -201,7 +201,13 @@ runs:
         install(setdiff(pkgs, installed))
 
         # Update outdated packages
-        install(rownames(old.packages(lib.loc = lib, checkBuilt = TRUE)), .msg = "Updating")
+        old_pkgs = function() rownames(old.packages(lib.loc = lib, checkBuilt = TRUE))
+        install(old_pkgs(), .msg = "Updating")
+        # old.packages() may find newer source versions but install.packages()
+        # may still install older binary versions, so check again
+        if (length(old <- old_pkgs())) for (pkg in old) {
+          install(pkg, type = "source", .msg = "Updating (source versions)")
+        }
 
         # Record state of the R_LIBS_USER directory after installing/updating
         time_after = lib_status()
