@@ -205,8 +205,8 @@ runs:
         install(old_pkgs(), .msg = "Updating")
         # old.packages() may find newer source versions but install.packages()
         # may still install older binary versions, so check again
-        if (length(old <- old_pkgs())) for (pkg in old) {
-          install(pkg, type = "source", .msg = "Updating (source versions)")
+        if (length(old <- old_pkgs())) {
+          install(old, type = "source", .msg = "Updating (source versions)")
         }
 
         # Record state of the R_LIBS_USER directory after installing/updating
