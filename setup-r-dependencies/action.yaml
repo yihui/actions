@@ -245,4 +245,4 @@ runs:
       uses: actions/cache/save@HEAD
       with:
         path: ${{ steps.setup-r-libs.outputs.r-libs-user }}
-        key: ${{ steps.cache-key.outputs.primary-key }}
+        key: ${{ steps.cache-key.outputs.primary-key }}-${{ github.run_attempt }}
