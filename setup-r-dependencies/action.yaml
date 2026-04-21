@@ -144,7 +144,7 @@ runs:
       shell: bash
       run: |
         BASE="r${{ steps.r-version.outputs.r-version }}${{ inputs.cache-key-suffix != '' && format('-{0}', inputs.cache-key-suffix) || '' }}"
-        PRIMARY="${BASE}-${{ github.run_id }}"
+        PRIMARY="${BASE}-${{ toJSON(matrix) }}-${{ github.run_id }}"
         echo "restore-key=${BASE}" >> "$GITHUB_OUTPUT"
         echo "primary-key=${PRIMARY}" >> "$GITHUB_OUTPUT"
 
