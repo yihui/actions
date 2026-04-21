@@ -236,6 +236,7 @@ runs:
       shell: Rscript {0}
       run: |
         sessionInfo()
+        options(width = 300)
         noquote(installed.packages()[, c('LibPath', 'Version', 'Built')])
 
     # Rtools35 ships tar 1.30 which is incompatible with the cache format used
