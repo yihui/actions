@@ -236,7 +236,7 @@ runs:
       shell: Rscript {0}
       run: |
         sessionInfo()
-        installed.packages()[, c('LibPath', 'Version', 'Built')]
+        noquote(installed.packages()[, c('LibPath', 'Version', 'Built')])
 
     # Rtools35 ships tar 1.30 which is incompatible with the cache format used
     # by GitHub Actions. Switch to the tar that ships with Git for Windows
