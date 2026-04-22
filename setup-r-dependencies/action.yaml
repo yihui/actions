@@ -206,6 +206,10 @@ runs:
           pkgs = setdiff(pkgs, pkgs_gh)
         }
 
+        # Find out all recursive dependencies
+        pkgs = tools::package_dependencies(pkgs, recursive = TRUE)
+        pkgs = unique(unlist(pkgs))
+
         # Try binary first, then source
         for (type in c("binary", "source")) {
           # Install missing packages
