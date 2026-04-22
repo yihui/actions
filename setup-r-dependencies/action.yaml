@@ -207,7 +207,7 @@ runs:
         }
 
         # Find out all recursive dependencies
-        pkgs = c(pkgs, tools::package_dependencies(pkgs, recursive = TRUE))
+        pkgs = c(pkgs, tools::package_dependencies(pkgs, db = available.packages(), recursive = TRUE))
         pkgs = unique(unlist(pkgs))
 
         # Install missing packages
