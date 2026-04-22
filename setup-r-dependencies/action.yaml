@@ -210,12 +210,9 @@ runs:
         pkgs = tools::package_dependencies(pkgs, recursive = TRUE)
         pkgs = unique(unlist(pkgs))
 
-        # Try binary first, then source
-        for (type in c("binary", "source")) {
-          # Install missing packages
-          installed = rownames(installed.packages())
-          install(setdiff(pkgs, installed), type = type)
-        }
+        # Install missing packages
+        installed = rownames(installed.packages())
+        install(setdiff(pkgs, installed))
 
         # Update outdated packages
         old_pkgs = function() rownames(old.packages(lib.loc = lib, checkBuilt = TRUE))
