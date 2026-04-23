@@ -241,7 +241,7 @@ runs:
 
         if (install_self) {
           system2("R", c("CMD", "build", shQuote(dirname(desc_file))))
-          system2("R", c("CMD", "install", Sys.glob(paste0(desc[1L, "Package"], "_*.tar.gz"))[1L]))
+          system2("R", c("CMD", "INSTALL", Sys.glob(paste0(desc[1L, "Package"], "_*.tar.gz"))[1L]))
         }
 
     - name: Session info
