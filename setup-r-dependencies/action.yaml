@@ -17,7 +17,7 @@ inputs:
     description: >
       Names of R universe(s) to use for package installation (space- or
       comma-separated).
-    default: ""
+    default: "cran bioc-release"
   working-directory:
     description: >
       Directory that contains the DESCRIPTION file. If empty (default),
@@ -88,13 +88,13 @@ runs:
         # Add r-universes
         univ = strsplit("${{ inputs.r-universe }}", "[ ,]")[[1]]
         univ = setdiff(gsub("^\\s+|\\s+$", "", univ), "")
-        if (length(univ)) repo = c(if (Sys.info()['sysname'] == 'Linux' && Sys.which('lsb_release') != '') {
+        if (length(univ)) repo = c(repo, if (Sys.info()['sysname'] == 'Linux' && Sys.which('lsb_release') != '') {
           r_branch = sub('^(\\d+\\.\\d+).*', '\\1', getRversion())
           distro = system2('lsb_release', '-sc', stdout = TRUE)
           sprintf("https://%s.r-universe.dev/bin/linux/%s-%s/%s", univ, distro, R.version$arch, r_branch)
         } else {
           sprintf('https://%s.r-universe.dev', univ)
-        }, repo)
+        })
         # Set repos in .Rprofile
         cat(sprintf("options(repos = c('%s'))\n", paste(repo, collapse = "', '")), file = '~/.Rprofile', append = TRUE)
         message("Repos: ", paste(repo, collapse = ", "))
@@ -211,8 +211,15 @@ runs:
         pkgs = unique(unlist(pkgs))
 
         # Install missing packages
-        installed = rownames(installed.packages())
-        install(setdiff(pkgs, installed))
+        install_missing = function(...) {
+          installed = rownames(installed.packages())
+          install(setdiff(pkgs, installed), ...)
+        }
+        install_missing()
+        # Sometimes binaries for compiled packages are not ready yet on CRAN or
+        # RSPM, try one more time to install from r-universe repositories
+        univ = grep('[.]r-universe[.]dev/', getOption("repos"), value = TRUE)
+        if (length(univ)) install_missing(repos = univ, .msg = "Installing from r-universe")
 
         # Update outdated packages
         old_pkgs = function() rownames(old.packages(lib.loc = lib, checkBuilt = TRUE))
