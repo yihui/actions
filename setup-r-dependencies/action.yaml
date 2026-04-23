@@ -233,7 +233,8 @@ runs:
         if (!packages_changed) message("All required packages are already up to date.")
 
         if (install_self) {
-          install(dirname(desc_file), repos = NULL, type = "source")
+          system2("R", c("CMD", "build", shQuote(dirname(desc_file))))
+          system2("R", c("CMD", "install", Sys.glob(paste0(desc[1L, "Package"], "_*.tar.gz"))[1L]))
         }
 
     - name: Session info
