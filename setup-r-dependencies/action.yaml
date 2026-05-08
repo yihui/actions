@@ -177,7 +177,7 @@ runs:
           desc_file = file.path(pkg_dir, "DESCRIPTION")
           desc = read.dcf(desc_file)
           dep_types = strsplit("${{ inputs.dependencies }}", "[[:space:],]+")[[1L]]
-          dep_types = intersect(trimws(dep_types), colnames(desc))
+          dep_types = intersect(c(dep_types, "VignetteBuilder"), colnames(desc))
           pkgs = unlist(strsplit(desc[1L, dep_types], ","))
           # Strip version constraints, e.g. "xfun (>= 0.1)" -> "xfun"
           pkgs = gsub("\\s+", "", gsub("\\([^)]*\\)", "", pkgs))
@@ -242,8 +242,16 @@ runs:
         if (!packages_changed) message("All required packages are already up to date.")
 
         if (install_self) {
-          system2("R", c("CMD", "build", shQuote(dirname(desc_file))))
-          system2("R", c("CMD", "INSTALL", Sys.glob(paste0(desc[1L, "Package"], "_*.tar.gz"))[1L]))
+          pkg_name = desc[1L, "Package"]
+          pkg_src = dirname(desc_file)
+          # If the package uses itself as a vignette builder, install from source dir
+          # first (without vignettes) so the builder is available for R CMD build
+          vb = if ("VignetteBuilder" %in% colnames(desc)) {
+            gsub("\\s+", "", unlist(strsplit(desc[1L, "VignetteBuilder"], ",")))
+          }
+          if (pkg_name %in% vb) system2("R", c("CMD", "INSTALL", shQuote(pkg_src)))
+          system2("R", c("CMD", "build", shQuote(pkg_src)))
+          system2("R", c("CMD", "INSTALL", Sys.glob(paste0(pkg_name, "_*.tar.gz"))[1L]))
         }
 
     - name: Session info
