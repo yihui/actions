@@ -12,6 +12,12 @@ External action tags (e.g., `actions/cache`, `actions/upload-artifact`) in
 action.yaml files are managed by Dependabot and should not be changed manually
 during releases.
 
+# Pushing
+
+Always pull/rebase from the remote branch before pushing (e.g.,
+`git pull --rebase origin main`) to avoid rejected pushes when the remote has
+new commits.
+
 # Testing
 
 The test workflow (`.github/workflows/test.yml`) runs on every push and PR. It
