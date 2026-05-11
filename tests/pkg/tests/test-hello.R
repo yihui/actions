@@ -1,2 +1,2 @@
 stopifnot(testpkg::hello() == "world")
-stopifnot(requireNamespace("xfun", quietly = TRUE))
+stopifnot(requireNamespace("litedown", quietly = TRUE))
