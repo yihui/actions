@@ -5,6 +5,7 @@ Authors@R: person("Yihui", "Xie", role = c("aut", "cre"), email = "xie@yihui.nam
 Description: A minimal package used to test the setup-r-dependencies and
     check-r-package GitHub Actions.
 License: MIT + file LICENSE
+Imports: xfun
 Suggests: litedown
 VignetteBuilder: litedown
 Encoding: UTF-8

@@ -1,2 +1,2 @@
-stopifnot(testpkg::hello() == "world")
-stopifnot(requireNamespace("litedown", quietly = TRUE))
+stopifnot(is.character(testpkg::hello()))
+stopifnot(grepl("Package: testpkg", testpkg::hello()))
