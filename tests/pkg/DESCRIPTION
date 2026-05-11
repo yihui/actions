@@ -6,6 +6,6 @@ Description: A minimal package used to test the setup-r-dependencies and
     check-r-package GitHub Actions.
 License: MIT + file LICENSE
 Imports: xfun
-Suggests: knitr, rmarkdown
-VignetteBuilder: knitr
+Suggests: litedown
+VignetteBuilder: litedown
 Encoding: UTF-8
