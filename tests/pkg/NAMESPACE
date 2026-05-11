@@ -1,0 +1,2 @@
+export(hello)
+importFrom(xfun, file_string)

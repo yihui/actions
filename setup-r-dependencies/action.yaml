@@ -150,7 +150,7 @@ runs:
 
     - name: Restore R package cache
       id: cache-restore
-      uses: actions/cache/restore@HEAD
+      uses: actions/cache/restore@v5.0.5
       with:
         path: ${{ steps.setup-r-libs.outputs.r-libs-user }}
         key: ${{ steps.cache-key.outputs.primary-key }}
@@ -277,7 +277,7 @@ runs:
     # subsequent runs (including after failures) benefit from the work done here.
     - name: Save R package cache
       if: always() && steps.install.outputs.packages-changed == 'true'
-      uses: actions/cache/save@HEAD
+      uses: actions/cache/save@v5.0.5
       with:
         path: ${{ steps.setup-r-libs.outputs.r-libs-user }}
         key: ${{ steps.cache-key.outputs.primary-key }}-${{ github.run_attempt }}

@@ -72,7 +72,7 @@ runs:
 
     - name: Upload check results on failure
       if: failure()
-      uses: actions/upload-artifact@HEAD
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: r-check-${{ github.run_id }}-${{ strategy.job-index }}-${{ github.run_attempt }}
         path: "*.Rcheck"

@@ -1,0 +1,11 @@
+Package: testpkg
+Title: Test Package for CI
+Version: 0.0.1
+Authors@R: person("Yihui", "Xie", role = c("aut", "cre"), email = "xie@yihui.name")
+Description: A minimal package used to test the setup-r-dependencies and
+    check-r-package GitHub Actions.
+License: MIT + file LICENSE
+Imports: xfun
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr
+Encoding: UTF-8
