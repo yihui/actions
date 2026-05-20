@@ -13,6 +13,10 @@ Miscellaneous GitHub Actions for R package development.
   `R CMD build` and `R CMD check` directly (no rcmdcheck). Both build and
   check flags are fully customizable.
 
+- [**litedown-site**](litedown-site/) — Builds an R package documentation
+  site with litedown, including the description, news, manuals, vignettes,
+  citation, and an interactive playground.
+
 ## Quick start
 
 ```yaml
