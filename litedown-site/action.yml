@@ -49,6 +49,7 @@ runs:
         if [ -f "$OLDPWD/docs/_litedown.yml" ]; then
           Rscript -e "litedown::fuse_book('$OLDPWD/docs')"
           cp -r "$OLDPWD/docs"/* "book"/
+          rm -f book/_litedown.yml book/*.Rmd
         fi
         [ -d "$OLDPWD/playground" ] && cp -r "$OLDPWD/playground/." playground
         if [ -d "examples" ]; then
