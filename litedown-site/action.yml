@@ -55,4 +55,5 @@ runs:
         if [ -d "examples" ]; then
           ls examples | grep -E '^[^_]' | grep -E '[.](Rmd|R)$' > playground/examples.txt
         fi
+        touch .nojekyll
         ${{ inputs.cleanup }}
