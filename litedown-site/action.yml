@@ -41,7 +41,15 @@ runs:
         fi
         [ -f "_footer.Rmd" ] && Rscript -e "litedown::fuse('_footer.Rmd', '.md')"
         rm -rf ${{ inputs.exclude }}
+        if [ -f "$OLDPWD/docs/_litedown.yml" ] && [ ! -d "book" ]; then
+          mkdir -p "book"
+          touch "book/index.html"
+        fi
         Rscript -e "litedown::fuse_site()"
+        if [ -f "$OLDPWD/docs/_litedown.yml" ]; then
+          Rscript -e "litedown::fuse_book('$OLDPWD/docs')"
+          cp -r "$OLDPWD/docs"/* "book"/
+        fi
         [ -d "$OLDPWD/playground" ] && cp -r "$OLDPWD/playground/." playground
         if [ -d "examples" ]; then
           ls examples | grep -E '^[^_]' | grep -E '[.](Rmd|R)$' > playground/examples.txt
