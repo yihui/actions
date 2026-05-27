@@ -224,8 +224,10 @@ runs:
         if (length(univ)) install_missing(repos = univ, .msg = "Installing from r-universe")
 
         # Update outdated packages
-        old_pkgs = function() tryCatch(rownames(old.packages(lib.loc = lib, checkBuilt = TRUE)), error =
- function(e) character(0))
+        old_pkgs = function() tryCatch(
+          rownames(old.packages(lib.loc = lib, checkBuilt = TRUE)),
+          error = function(e) character(0)
+        )
         install(old_pkgs(), .msg = "Updating")
         # old.packages() may find newer source versions but install.packages()
         # may still install older binary versions, so check again
