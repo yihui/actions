@@ -83,8 +83,11 @@ runs:
           break
         }
         # Set default repos if not already set
-        repo = setdiff(getOption("repos"), "@CRAN@")
+        repo = getOption("repos")
+        repo = repo[repo != "@CRAN@"]
         if (length(repo) == 0) repo = c(CRAN = 'https://cloud.r-project.org')
+        i = is.null(names(repo)) || names(repo) == ""
+        names(repo)[i] = sub(".*?://([^/]+).*", "\\1", repo[i])
         # Add r-universes
         univ = strsplit("${{ inputs.r-universe }}", "[ ,]")[[1]]
         univ = setdiff(gsub("^\\s+|\\s+$", "", univ), "")
