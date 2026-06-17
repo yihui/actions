@@ -84,11 +84,11 @@ runs:
         }
         # Set default repos if not already set
         repo = setdiff(getOption("repos"), "@CRAN@")
-        if (length(repo) == 0) repo = 'https://cloud.r-project.org'
+        if (length(repo) == 0) repo = c(CRAN = 'https://cloud.r-project.org')
         # Add r-universes
         univ = strsplit("${{ inputs.r-universe }}", "[ ,]")[[1]]
         univ = setdiff(gsub("^\\s+|\\s+$", "", univ), "")
-        if (length(univ)) repo = c(repo, if (Sys.info()['sysname'] == 'Linux' && Sys.which('lsb_release') != '') {
+        if (length(univ)) repo = c(repo, R_UNIVERSE = if (Sys.info()['sysname'] == 'Linux' && Sys.which('lsb_release') != '') {
           r_branch = sub('^(\\d+\\.\\d+).*', '\\1', getRversion())
           distro = system2('lsb_release', '-sc', stdout = TRUE)
           sprintf("https://%s.r-universe.dev/bin/linux/%s-%s/%s", univ, distro, R.version$arch, r_branch)
@@ -96,7 +96,7 @@ runs:
           sprintf('https://%s.r-universe.dev', univ)
         })
         # Set repos in .Rprofile
-        cat(sprintf("options(repos = c('%s'))\n", paste(repo, collapse = "', '")), file = '~/.Rprofile', append = TRUE)
+        cat(sprintf("options(repos = %s)\n", deparse(repo)), file = '~/.Rprofile', append = TRUE)
         message("Repos: ", paste(repo, collapse = ", "))
 
     - name: Find package directory
