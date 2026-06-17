@@ -86,8 +86,8 @@ runs:
         repo = getOption("repos")
         repo = repo[repo != "@CRAN@"]
         if (length(repo) == 0) repo = c(CRAN = 'https://cloud.r-project.org')
-        if (!(i <- is.null(names(repo))) i = names(repo) == ""
-        names(repo)[i] = sub(".*?://([^/]+).*", "\\1", repo[i])
+        if (!(i <- is.null(names(repo)))) i = names(repo) == ""
+        if (any(i)) names(repo)[i] = sub(".*?://([^/]+).*", "\\1", repo[i])
         # Add r-universes
         univ = strsplit("${{ inputs.r-universe }}", "[ ,]")[[1]]
         univ = setdiff(gsub("^\\s+|\\s+$", "", univ), "")
