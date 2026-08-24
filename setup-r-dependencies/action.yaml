@@ -190,6 +190,8 @@ runs:
         }
 
         extra = strsplit("${{ inputs.extra-packages }}", "[[:space:],]+")[[1L]]
+        # Strip pak-style prefixes, e.g. "any::curl" -> "curl", "github::user/repo" -> "user/repo"
+        extra = sub("^[^:/]+::", "", extra)
         pkgs  = setdiff(c(pkgs, extra), c("", "R"))
         if (install_self <- ("." %in% pkgs)) pkgs = setdiff(pkgs, ".")
 
