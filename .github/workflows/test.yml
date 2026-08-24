@@ -26,3 +26,15 @@ jobs:
       - uses: ./check-r-package
         with:
           working-directory: tests/pkg
+          revision: ${{ github.sha }}
+
+      - name: Verify Revision recorded in built tarball
+        shell: bash
+        run: |
+          tarball=$(ls testpkg_*.tar.gz | head -1)
+          rev=$(tar -xzf "$tarball" -O testpkg/DESCRIPTION | grep '^Revision:' | sed 's/^Revision:[[:space:]]*//')
+          echo "Revision in tarball: '$rev'"
+          if [ "$rev" != "${{ github.sha }}" ]; then
+            echo "Expected Revision '${{ github.sha }}' but got '$rev'"
+            exit 1
+          fi
