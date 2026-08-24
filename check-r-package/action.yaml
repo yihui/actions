@@ -14,6 +14,13 @@ inputs:
       Directory containing the R package source. If empty (default), the first
       DESCRIPTION file found recursively from the repository root is used.
     default: ""
+  revision:
+    description: >
+      Optional revision string (e.g. a git commit SHA) to record in the
+      package's DESCRIPTION file as a 'Revision' field before building. Pass
+      the github.sha context (or the equivalent for your CI) to embed the
+      exact commit in the built tarball. Leave empty to skip.
+    default: ""
 
 runs:
   using: "composite"
@@ -33,6 +40,22 @@ runs:
         message("Package directory: ", d)
         cat(sprintf("pkg-dir=%s\n", d),
             file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+
+    - name: Record revision in DESCRIPTION
+      if: inputs.revision != ''
+      shell: Rscript {0}
+      run: |
+        # Append/replace the 'Revision' field in DESCRIPTION
+        f = file.path("${{ steps.pkg-dir.outputs.pkg-dir }}", "DESCRIPTION")
+        desc = read.dcf(f)
+        rev = "${{ inputs.revision }}"
+        if ("Revision" %in% colnames(desc)) {
+          desc[1L, "Revision"] = rev
+        } else {
+          desc = cbind(desc, Revision = rev)
+        }
+        write.dcf(desc, f)
+        message("Recorded Revision: ", rev)
 
     - name: Build R package
       id: build

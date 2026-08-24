@@ -25,6 +25,7 @@ customizable.
 | `build-args` | | Arguments passed to `R CMD build`. |
 | `check-args` | `--no-manual --as-cran` | Arguments passed to `R CMD check`. |
 | `working-directory` | | Directory containing the R package source. If empty, the first `DESCRIPTION` found recursively is used. |
+| `revision` | | Optional revision string (e.g. a git commit SHA) recorded in the package's `DESCRIPTION` as a `Revision` field before building. Pass `${{ github.sha }}` to embed the exact commit in the built tarball. |
 
 ## Example usage
 
