@@ -34,11 +34,13 @@ runs:
         fi
         mkdir -p "${{ inputs.site-dir }}"
         cd "${{ inputs.site-dir }}"
-        # Copy the action's template files without overwriting existing files
-        # in the site directory. Use cp instead of rsync since rsync may not be
-        # available on all runners (e.g. act, Forgejo, minimal images). The -n
-        # (no-clobber) flag is supported by both GNU and BSD cp.
-        cp -rn "${{ github.action_path }}"/. ./
+        # Copy template files into the site dir, keeping any files already there.
+        ( cd "${{ github.action_path }}" && find . -type f -print ) | while IFS= read -r f; do
+          if [ ! -e "$f" ]; then
+            mkdir -p "$(dirname "$f")"
+            cp "${{ github.action_path }}/$f" "$f"
+          fi
+        done
         [ -d "$OLDPWD/vignettes" ] || rm -f articles.Rmd
         [ -f "$OLDPWD/NEWS.md" ] || [ -f "$OLDPWD/inst/NEWS.Rd" ] || rm -f news.Rmd
         if [ -d "$OLDPWD/examples" ]; then
