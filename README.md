@@ -22,8 +22,8 @@ Miscellaneous GitHub Actions for R package development.
 ```yaml
 - uses: actions/checkout@v4
 - uses: r-lib/setup-r@v2
-- uses: yihui/actions/setup-r-dependencies@v1.3.0
-- uses: yihui/actions/check-r-package@v1.3.0
+- uses: yihui/actions/setup-r-dependencies@v1.3.1
+- uses: yihui/actions/check-r-package@v1.3.1
 ```
 
 ## License
