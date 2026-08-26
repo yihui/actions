@@ -16,6 +16,9 @@ inputs:
   repo:
     description: 'Whether to also publish the package as a minimal R package repository under the site (builds the source tarball into `src/contrib` and generates the `PACKAGES` index, so users can install via `install.packages()` with the site URL as `repos`)'
     default: 'false'
+  repo-fields:
+    description: 'Additional DESCRIPTION fields to include in the `PACKAGES` index when `repo: true` (space- or comma-separated), passed to the `fields` argument of `tools::write_PACKAGES()`. For example, use `Revision` to surface a recorded git commit'
+    default: ''
 runs:
   using: "composite"
   steps:
@@ -67,6 +70,7 @@ runs:
           mkdir -p src/contrib
           R CMD build "$OLDPWD"
           mv *.tar.gz src/contrib/
-          Rscript -e "tools::write_PACKAGES('src/contrib')"
+          Rscript -e "f = setdiff(strsplit('${{ inputs.repo-fields }}', '[[:space:],]+')[[1L]], '')" \
+                  -e "tools::write_PACKAGES('src/contrib', fields = if (length(f)) f)"
         fi
         ${{ inputs.cleanup }}
