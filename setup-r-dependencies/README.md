@@ -37,13 +37,13 @@ Basic usage — installs all packages from `DESCRIPTION` automatically:
 ```yaml
 - uses: r-lib/setup-r@v2
 
-- uses: yihui/actions/setup-r-dependencies@v1.2.0
+- uses: yihui/actions/setup-r-dependencies@v1.3.0
 ```
 
 Install extra R packages and use r-universe repositories:
 
 ```yaml
-- uses: yihui/actions/setup-r-dependencies@v1.2.0
+- uses: yihui/actions/setup-r-dependencies@v1.3.0
   with:
     extra-packages: mime tinyimg
     r-universe: cran bioc-release yihui
@@ -52,7 +52,7 @@ Install extra R packages and use r-universe repositories:
 Install a system dependency that has the same name on all platforms:
 
 ```yaml
-- uses: yihui/actions/setup-r-dependencies@v1.2.0
+- uses: yihui/actions/setup-r-dependencies@v1.3.0
   with:
     system-packages: pandoc
 ```
@@ -60,7 +60,7 @@ Install a system dependency that has the same name on all platforms:
 Install a system dependency with different names on different platforms:
 
 ```yaml
-- uses: yihui/actions/setup-r-dependencies@v1.2.0
+- uses: yihui/actions/setup-r-dependencies@v1.3.0
   with:
     apt-packages: libxml2-dev
     brew-packages: libxml2
