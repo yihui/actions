@@ -34,15 +34,15 @@ Basic usage with default check arguments:
 ```yaml
 - uses: r-lib/setup-r@v2
 
-- uses: yihui/actions/setup-r-dependencies@v1.3.1
+- uses: yihui/actions/setup-r-dependencies@v1.3.2
 
-- uses: yihui/actions/check-r-package@v1.3.1
+- uses: yihui/actions/check-r-package@v1.3.2
 ```
 
 Custom build arguments:
 
 ```yaml
-- uses: yihui/actions/check-r-package@v1.3.1
+- uses: yihui/actions/check-r-package@v1.3.2
   with:
     build-args: '--no-build-vignettes'
     check-args: '--no-manual --no-vignettes --as-cran'
