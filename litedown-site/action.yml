@@ -35,6 +35,15 @@ runs:
             fi
           done
         fi
+        # Install the package if it is not already installed, since rendering
+        # the site needs it (e.g. pkg_manual() reads the installed Rd database,
+        # articles.Rmd lists the built vignettes, and pkg_citation() reads the
+        # installed CITATION).
+        pkg=$(Rscript -e "cat(read.dcf('DESCRIPTION', 'Package')[1, 1])")
+        if ! Rscript -e "q(status = !requireNamespace('$pkg', quietly = TRUE))"; then
+          R CMD build --no-manual .
+          R CMD INSTALL "$pkg"_*.tar.gz
+        fi
         mkdir -p "${{ inputs.site-dir }}"
         cd "${{ inputs.site-dir }}"
         # Copy template files into the site dir, keeping any files already there.
