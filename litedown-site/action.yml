@@ -2,7 +2,7 @@ name: 'Build an R package site'
 description: 'Build an R package site with litedown that includes the description, news, manuals, vignettes, and citation, etc.'
 inputs:
   site-dir:
-    description: 'Directory of the site source'
+    description: 'Directory in which the site is built (it holds both the site source and the output)'
     default: 'site'
   pkg-root:
     description: 'Root directory of the R package in the repository'
@@ -44,38 +44,13 @@ runs:
           R CMD build --no-manual .
           R CMD INSTALL "$pkg"_*.tar.gz
         fi
-        mkdir -p "${{ inputs.site-dir }}"
+        # The site template and the whole build logic live in litedown itself
+        # (litedown >= 0.12), so that a site can also be built locally.
+        Rscript -e "x = setdiff(strsplit('${{ inputs.exclude }}', '[[:space:]]+')[[1L]], '')" \
+                -e "litedown::pkg_site(output = '${{ inputs.site-dir }}', exclude = x)"
         cd "${{ inputs.site-dir }}"
-        # Copy template files into the site dir, keeping any files already there.
-        ( cd "${{ github.action_path }}" && find . -type f -print ) | while IFS= read -r f; do
-          if [ ! -e "$f" ]; then
-            mkdir -p "$(dirname "$f")"
-            cp "${{ github.action_path }}/$f" "$f"
-          fi
-        done
-        [ -d "$OLDPWD/vignettes" ] || rm -f articles.Rmd
-        [ -f "$OLDPWD/NEWS.md" ] || [ -f "$OLDPWD/inst/NEWS.Rd" ] || rm -f news.Rmd
-        if [ -d "$OLDPWD/examples" ]; then
-          cp -r "$OLDPWD/examples" ./
-        else
-          rm -f examples.Rmd
-        fi
-        [ -f "_footer.Rmd" ] && Rscript -e "litedown::fuse('_footer.Rmd', '.md')"
-        rm -rf ${{ inputs.exclude }}
-        if [ -f "$OLDPWD/docs/_litedown.yml" ] && [ ! -d "book" ]; then
-          mkdir -p "book"
-          touch "book/index.html"
-        fi
-        Rscript -e "litedown::fuse_site()"
-        if [ -f "$OLDPWD/docs/_litedown.yml" ]; then
-          Rscript -e "litedown::fuse_book('$OLDPWD/docs')"
-          cp -r "$OLDPWD/docs"/* "book"/
-          rm -f book/_litedown.yml book/*.Rmd
-        fi
-        [ -d "$OLDPWD/playground" ] && cp -r "$OLDPWD/playground/." playground
-        if [ -d "examples" ]; then
-          ls examples | grep -E '^[^_]' | grep -E '[.](Rmd|R)$' > playground/examples.txt
-        fi
+        # Jekyll ignores files/dirs starting with _ (e.g. the template's
+        # _footer.md), so turn it off for GitHub Pages.
         touch .nojekyll
         if [ "${{ inputs.repo }}" = "true" ]; then
           mkdir -p src/contrib
