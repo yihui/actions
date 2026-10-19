@@ -22,6 +22,7 @@ jobs:
       - uses: ./setup-r-dependencies
         with:
           working-directory: tests/pkg
+          r-universe: yihui
 
       - uses: ./check-r-package
         with:
