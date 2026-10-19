@@ -55,6 +55,6 @@ runs:
           R CMD build "$OLDPWD"
           mv *.tar.gz src/contrib/
           Rscript -e "f = setdiff(strsplit('${{ inputs.repo-fields }}', '[[:space:],]+')[[1L]], '')" \
-                  -e "tools::write_PACKAGES('src/contrib', fields = if (length(f)) f)"
+                  -e "tools::write_PACKAGES('src/contrib', type = 'source', fields = if (length(f)) f)"
         fi
         ${{ inputs.cleanup }}
