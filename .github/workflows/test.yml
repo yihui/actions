@@ -22,6 +22,7 @@ jobs:
       - uses: ./setup-r-dependencies
         with:
           working-directory: tests/pkg
+          r-universe: yihui
 
       - uses: ./check-r-package
         with:
@@ -38,3 +39,22 @@ jobs:
             echo "Expected Revision '${{ github.sha }}' but got '$rev'"
             exit 1
           fi
+
+      - uses: ./litedown-site
+        with:
+          pkg-root: tests/pkg
+          repo: true
+          repo-fields: Revision
+
+      - name: Verify site output
+        shell: bash
+        working-directory: tests/pkg/site
+        run: |
+          ls -R .
+          for f in index.html .nojekyll src/contrib/PACKAGES; do
+            [ -f "$f" ] || { echo "Missing $f"; exit 1; }
+          done
+          ls src/contrib/testpkg_*.tar.gz
+          grep -q '^Package: testpkg' src/contrib/PACKAGES
+          # default cleanup should have removed the .Rmd sources
+          if ls *.Rmd >/dev/null 2>&1; then echo "Rmd files not cleaned"; exit 1; fi
