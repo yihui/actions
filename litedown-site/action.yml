@@ -44,8 +44,6 @@ runs:
           R CMD build --no-manual .
           R CMD INSTALL "$pkg"_*.tar.gz
         fi
-        # The site template and the whole build logic live in litedown itself
-        # (litedown >= 0.12), so that a site can also be built locally.
         Rscript -e "x = setdiff(strsplit('${{ inputs.exclude }}', '[[:space:]]+')[[1L]], '')" \
                 -e "litedown::pkg_site(output = '${{ inputs.site-dir }}', exclude = x)"
         cd "${{ inputs.site-dir }}"
