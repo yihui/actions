@@ -257,7 +257,8 @@ runs:
           vb = if ("VignetteBuilder" %in% colnames(desc)) {
             gsub("\\s+", "", unlist(strsplit(desc[1L, "VignetteBuilder"], ",")))
           }
-          if (pkg_name %in% vb) system2("R", c("CMD", "INSTALL", shQuote(pkg_src)))
+          if (pkg_name %in% vb && system.file(package = pkg_name) == "")
+            system2("R", c("CMD", "INSTALL", shQuote(pkg_src)))
           system2("R", c("CMD", "build", shQuote(pkg_src)))
           system2("R", c("CMD", "INSTALL", Sys.glob(paste0(pkg_name, "_*.tar.gz"))[1L]))
         }
