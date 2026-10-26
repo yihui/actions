@@ -188,12 +188,13 @@ runs:
           pkgs = desc = desc_file = NULL
           message("No DESCRIPTION file found in the repository.")
         }
+        pkg_name = desc[1L, "Package"]
 
         extra = strsplit("${{ inputs.extra-packages }}", "[[:space:],]+")[[1L]]
         # Strip pak-style prefixes, e.g. "any::curl" -> "curl", "github::user/repo" -> "user/repo"
         extra = sub("^[^:/]+::", "", extra)
         pkgs  = setdiff(c(pkgs, extra), c("", "R"))
-        if (install_self <- ("." %in% pkgs)) pkgs = setdiff(pkgs, ".")
+        if (install_self <- ("." %in% pkgs)) pkgs = setdiff(pkgs, c(".", pkg_name))
 
         # Skip help pages for R < 4.0
         install = function(pkgs, ..., .msg = "Installing") if (length(pkgs)) {
@@ -250,7 +251,6 @@ runs:
         if (!packages_changed) message("All required packages are already up to date.")
 
         if (install_self) {
-          pkg_name = desc[1L, "Package"]
           pkg_src = dirname(desc_file)
           # If the package uses itself as a vignette builder, install from source dir
           # first (without vignettes) so the builder is available for R CMD build
