@@ -38,7 +38,7 @@ inputs:
     description: >
       Additional system packages to install via Homebrew on macOS only
       (space-separated). Use when the package name differs between platforms.
-    default: ""
+    default: "xquartz"
   choco-packages:
     description: >
       Additional system packages to install via Chocolatey on Windows only

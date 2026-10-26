@@ -26,7 +26,7 @@ Actions cache so that subsequent runs are faster.
 | `working-directory` | | Directory containing the `DESCRIPTION` file. If empty, the first `DESCRIPTION` found recursively is used. |
 | `system-packages` | | System packages to install on **all** platforms via apt-get / Homebrew / Chocolatey (space-separated). |
 | `apt-packages` | | Additional system packages for Linux only (apt-get). |
-| `brew-packages` | | Additional system packages for macOS only (Homebrew). |
+| `brew-packages` | `xquartz` | Additional system packages for macOS only (Homebrew). |
 | `choco-packages` | | Additional system packages for Windows only (Chocolatey). |
 | `cache-key-suffix` | | Optional suffix appended to the cache key (with a `-` separator) to allow separate caches for the same OS and R version (e.g., container image, CPU architecture). |
 
@@ -37,13 +37,13 @@ Basic usage — installs all packages from `DESCRIPTION` automatically:
 ```yaml
 - uses: r-lib/setup-r@v2
 
-- uses: yihui/actions/setup-r-dependencies@v1.4.0
+- uses: yihui/actions/setup-r-dependencies@v1.4.1
 ```
 
 Install extra R packages and use r-universe repositories:
 
 ```yaml
-- uses: yihui/actions/setup-r-dependencies@v1.4.0
+- uses: yihui/actions/setup-r-dependencies@v1.4.1
   with:
     extra-packages: mime tinyimg
     r-universe: cran bioc-release yihui
@@ -52,7 +52,7 @@ Install extra R packages and use r-universe repositories:
 Install a system dependency that has the same name on all platforms:
 
 ```yaml
-- uses: yihui/actions/setup-r-dependencies@v1.4.0
+- uses: yihui/actions/setup-r-dependencies@v1.4.1
   with:
     system-packages: pandoc
 ```
@@ -60,7 +60,7 @@ Install a system dependency that has the same name on all platforms:
 Install a system dependency with different names on different platforms:
 
 ```yaml
-- uses: yihui/actions/setup-r-dependencies@v1.4.0
+- uses: yihui/actions/setup-r-dependencies@v1.4.1
   with:
     apt-packages: libxml2-dev
     brew-packages: libxml2
