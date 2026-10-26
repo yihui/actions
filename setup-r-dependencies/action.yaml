@@ -230,8 +230,9 @@ runs:
         if (length(univ)) install_missing(repos = univ, .msg = "Installing from r-universe")
 
         # Update outdated packages
+        # (skip this repo's own package: it is reinstalled from source below)
         old_pkgs = function(...) tryCatch(
-          rownames(old.packages(lib.loc = lib, checkBuilt = TRUE, ...)),
+          setdiff(rownames(old.packages(lib.loc = lib, checkBuilt = TRUE, ...)), if (install_self) pkg_name),
           error = function(e) character(0)
         )
         install(old_pkgs(), .msg = "Updating")
