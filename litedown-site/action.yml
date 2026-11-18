@@ -55,7 +55,7 @@ runs:
         fi
         # Also clean subdirs that are their own litedown sites (found before
         # cleanup, since it may delete _litedown.yml).
-        mapfile -t dirs < <(find . -mindepth 2 -name _litedown.yml -exec dirname {} \;)
-        for d in . "${dirs[@]}"; do
+        dirs=$(echo .; find . -mindepth 2 -name _litedown.yml -exec dirname {} \;)
+        while IFS= read -r d; do
           (cd "$d" && ${{ inputs.cleanup }})
-        done
+        done <<< "$dirs"
